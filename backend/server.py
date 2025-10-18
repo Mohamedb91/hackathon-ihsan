@@ -12,6 +12,7 @@ from app import app as pothole_app, gemini_engine
 # Import TII routes and scheduler
 from routes import tii_routes
 from services.tii_scheduler import TIIScheduler
+from services.arcgis_service import ArcGISService
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -27,9 +28,11 @@ app = pothole_app
 # Include TII routes
 app.include_router(tii_routes.router)
 
-# Initialize TII scheduler
+# Initialize ArcGIS service and TII scheduler
+arcgis_service = ArcGISService()
 scheduler = TIIScheduler(db, gemini_engine)
 tii_routes.scheduler = scheduler  # Set global scheduler for routes
+tii_routes.arcgis_service = arcgis_service  # Set global ArcGIS service for routes
 
 app.add_middleware(
     CORSMiddleware,
