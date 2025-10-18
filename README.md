@@ -1,11 +1,18 @@
-# Pothole Detector
+# Pothole Detection System
 
-A minimal, production-ready service that detects potholes in city images using **Google Gemini 2.5 Flash** (multimodal vision).
+A production-ready infrastructure monitoring system that detects potholes in images using **Google Gemini 2.0 Flash** (multimodal vision). Features automated monitoring of Transport Infrastructure Ireland (TII) traffic cameras with real-time pothole detection.
 
 ## Features
 
-- **Backend**: FastAPI with Gemini 2.5 Flash integration
-- **Frontend**: React UI with drag-drop and canvas overlay for bounding boxes
+- **Pothole Detector**: Upload any image for instant AI-powered pothole detection
+- **TII Camera Integration**: Automated monitoring of Ireland's traffic camera network
+  - Automatic camera discovery from TII ArcGIS FeatureServer
+  - Scheduled polling every 15 minutes (configurable)
+  - Real-time pothole detection on camera snapshots
+  - Interactive map visualization with Leaflet
+  - Historical tracking of observations per camera
+- **Backend**: FastAPI with Gemini 2.0 Flash integration and MongoDB storage
+- **Frontend**: Modern React UI with drag-drop upload, interactive maps, and canvas overlays
 - **Batch Evaluator**: Script to process multiple images and generate JSONL results
 - **Strict JSON API**: Clean, typed responses with pothole presence, count, and bounding boxes
 
