@@ -26,7 +26,8 @@ class TfLScheduler:
         self.last_cycle_stats = {
             'processed': 0,
             'ok': 0,
-            'errors': 0
+            'errors': 0,
+            'notFound404': 0
         }
         self.camera_offset = 0
         
