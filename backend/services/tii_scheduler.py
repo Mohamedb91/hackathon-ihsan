@@ -69,8 +69,12 @@ class TIIScheduler:
                 logger.error(f"Error in polling loop: {e}", exc_info=True)
                 await asyncio.sleep(60)  # Wait 1 minute on error
     
-    async def run_cycle(self) -> Dict[str, Any]:
+    async def run_cycle(self, limit: int = None, camera_id: str = None) -> Dict[str, Any]:
         """Run one polling cycle.
+        
+        Args:
+            limit: Maximum number of cameras to process (overrides config)
+            camera_id: Optional camera ID to process only one camera
         
         Returns:
             Stats dictionary with processed, ok, errors counts
@@ -79,9 +83,15 @@ class TIIScheduler:
         stats = {'processed': 0, 'ok': 0, 'errors': 0}
         
         try:
-            # Get active cameras
-            cameras_cursor = self.db.cameras.find({'active': True}).skip(self.camera_offset)
-            cameras = await cameras_cursor.to_list(length=config.MAX_CAMERAS_PER_CYCLE)
+            # If camera_id provided, process only that camera
+            if camera_id:
+                camera = await self.db.cameras.find_one({'cameraId': camera_id, 'active': True})
+                cameras = [camera] if camera else []
+            else:
+                # Get active cameras
+                max_limit = limit or config.MAX_CAMERAS_PER_CYCLE
+                cameras_cursor = self.db.cameras.find({'active': True}).skip(self.camera_offset)
+                cameras = await cameras_cursor.to_list(length=max_limit)
             
             if not cameras:
                 # Reset offset if we've processed all cameras
