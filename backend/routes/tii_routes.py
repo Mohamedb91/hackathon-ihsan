@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List, Optional
 import logging
@@ -14,6 +14,7 @@ router = APIRouter(prefix="/api/tii", tags=["TII Cameras"])
 
 # Global scheduler instance (will be set by server.py)
 scheduler: Optional[TIIScheduler] = None
+arcgis_service: Optional[ArcGISService] = None
 
 def get_db():
     """Dependency to get database instance."""
@@ -29,9 +30,28 @@ async def sync_cameras(db: AsyncIOMotorDatabase = Depends(get_db)):
     Returns:
         Statistics about synced cameras
     """
+    if not arcgis_service:
+        raise HTTPException(status_code=500, detail="ArcGIS service not initialized")
+    
+    # Validate layer URL first
+    if not arcgis_service.validate_layer_url():
+        raise HTTPException(
+            status_code=400,
+            detail=arcgis_service.validation_error or "Invalid ArcGIS layer URL"
+        )
+    
     try:
-        arcgis_service = ArcGISService()
         features = arcgis_service.fetch_tii_features()
+        
+        if not features:
+            logger.warning("No features returned from ArcGIS")
+            return {
+                'inserted': 0,
+                'updated': 0,
+                'inactive': 0,
+                'camerasActive': 0,
+                'message': 'No cameras found in ArcGIS layer'
+            }
         
         inserted = 0
         updated = 0
@@ -46,7 +66,8 @@ async def sync_cameras(db: AsyncIOMotorDatabase = Depends(get_db)):
                 attributes.get('OBJECTID') or 
                 attributes.get('ID') or 
                 attributes.get('CameraID') or 
-                str(attributes.get('FID', f"cam_{inserted + updated}"))
+                attributes.get('FID') or
+                str(hash(str(attributes)))
             )
             camera_id = str(camera_id)
             
@@ -56,6 +77,7 @@ async def sync_cameras(db: AsyncIOMotorDatabase = Depends(get_db)):
                 attributes.get('Title') or
                 attributes.get('Location') or
                 attributes.get('Description') or
+                attributes.get('SITE_NAME') or
                 f"Camera {camera_id}"
             )
             
@@ -72,22 +94,28 @@ async def sync_cameras(db: AsyncIOMotorDatabase = Depends(get_db)):
             snapshot_field = arcgis_service.detect_snapshot_field(attributes)
             active = snapshot_field is not None
             
+            # Prepare camera document
+            camera_doc = {
+                'name': name,
+                'lat': float(lat),
+                'lon': float(lon),
+                'snapshotField': snapshot_field,
+                'active': active,
+                'raw': attributes
+            }
+            
             if not active:
+                camera_doc['inactiveReason'] = "No snapshot field detected"
+                camera_doc['raw']['missingSnapshotField'] = True
                 inactive += 1
             
             # Upsert camera
             result = await db.cameras.update_one(
                 {'cameraId': camera_id},
                 {
-                    '$set': {
-                        'name': name,
-                        'lat': lat,
-                        'lon': lon,
-                        'snapshotField': snapshot_field,
-                        'active': active,
-                        'raw': attributes
-                    },
+                    '$set': camera_doc,
                     '$setOnInsert': {
+                        'cameraId': camera_id,
                         'lastSnapshotUrl': None,
                         'lastSeenAt': None
                     }
@@ -117,8 +145,15 @@ async def sync_cameras(db: AsyncIOMotorDatabase = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to sync cameras: {str(e)}")
 
 @router.post("/run-once")
-async def run_once():
+async def run_once(
+    limit: int = Query(default=50, ge=1, le=100),
+    camera_id: Optional[str] = Query(default=None)
+):
     """Manually trigger one polling cycle.
+    
+    Args:
+        limit: Maximum number of cameras to process
+        camera_id: Optional camera ID to process only one camera
     
     Returns:
         Cycle statistics
@@ -127,7 +162,7 @@ async def run_once():
         raise HTTPException(status_code=500, detail="Scheduler not initialized")
     
     try:
-        stats = await scheduler.run_cycle()
+        stats = await scheduler.run_cycle(limit=limit, camera_id=camera_id)
         return {
             'success': True,
             'stats': stats
@@ -144,13 +179,20 @@ async def get_status(db: AsyncIOMotorDatabase = Depends(get_db)):
         Status information
     """
     cameras_active = await db.cameras.count_documents({'active': True})
+    cameras_total = await db.cameras.count_documents({})
     
     status = {
         'camerasActive': cameras_active,
+        'camerasTotal': cameras_total,
         'lastRunAt': None,
         'nextRunAt': None,
-        'lastCycle': {'processed': 0, 'ok': 0, 'errors': 0}
+        'lastCycle': {'processed': 0, 'ok': 0, 'errors': 0},
+        'validationError': None
     }
+    
+    # Check for validation errors
+    if arcgis_service and arcgis_service.validation_error:
+        status['validationError'] = arcgis_service.validation_error
     
     if scheduler:
         scheduler_status = scheduler.get_status()
@@ -175,7 +217,8 @@ async def list_cameras(db: AsyncIOMotorDatabase = Depends(get_db)):
             'lon': 1,
             'lastSeenAt': 1,
             'lastSnapshotUrl': 1,
-            'active': 1
+            'active': 1,
+            'inactiveReason': 1
         }
     ).to_list(1000)
     

@@ -1,5 +1,6 @@
 import requests
 import logging
+import re
 from typing import List, Dict, Any, Optional
 from core.config import config
 
@@ -10,6 +11,66 @@ class ArcGISService:
     
     def __init__(self):
         self.layer_url = config.TII_ARCGIS_LAYER_URL
+        self.snapshot_field_override = config.TII_SNAPSHOT_FIELD
+        self.validation_error = None
+        
+    def validate_layer_url(self) -> bool:
+        """Validate the ArcGIS FeatureServer layer URL.
+        
+        Returns:
+            True if valid, False otherwise. Sets self.validation_error on failure.
+        """
+        if not self.layer_url:
+            self.validation_error = "TII_ARCGIS_LAYER_URL not configured in .env"
+            logger.error(f"ERROR: {self.validation_error}")
+            return False
+            
+        try:
+            query_url = f"{self.layer_url}/query"
+            params = {
+                'where': '1=1',
+                'outFields': '*',
+                'returnGeometry': 'true',
+                'f': 'json'
+            }
+            
+            logger.info(f"Validating TII ArcGIS layer: {query_url}")
+            response = requests.get(query_url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if 'error' in data:
+                self.validation_error = f"ArcGIS API error: {data['error'].get('message', 'Unknown error')}"
+                logger.error(f"ERROR: {self.validation_error}")
+                return False
+            
+            features = data.get('features', [])
+            if not features:
+                self.validation_error = (
+                    "Invalid ArcGIS FeatureServer layer. No features returned. "
+                    "Provide a valid FeatureServer layer root URL (e.g., https://example.com/FeatureServer/0). "
+                    f"Test URL: {query_url}?where=1%3D1&outFields=*&returnGeometry=true&f=json"
+                )
+                logger.error(f"ERROR: {self.validation_error}")
+                return False
+            
+            logger.info(f"✓ TII ArcGIS layer validated successfully ({len(features)} features found)")
+            self.validation_error = None
+            return True
+            
+        except requests.exceptions.Timeout:
+            self.validation_error = f"Timeout connecting to ArcGIS layer: {self.layer_url}"
+            logger.error(f"ERROR: {self.validation_error}")
+            return False
+        except requests.exceptions.RequestException as e:
+            self.validation_error = f"Failed to connect to ArcGIS layer: {str(e)}"
+            logger.error(f"ERROR: {self.validation_error}")
+            return False
+        except Exception as e:
+            self.validation_error = f"Unexpected error validating layer: {str(e)}"
+            logger.error(f"ERROR: {self.validation_error}", exc_info=True)
+            return False
         
     def fetch_tii_features(self) -> List[Dict[str, Any]]:
         """Fetch all camera features from TII ArcGIS FeatureServer.
@@ -38,6 +99,10 @@ class ArcGISService:
             response.raise_for_status()
             
             data = response.json()
+            
+            if 'error' in data:
+                raise Exception(f"ArcGIS API error: {data['error'].get('message', 'Unknown error')}")
+            
             features = data.get('features', [])
             
             logger.info(f"Fetched {len(features)} camera features from TII")
@@ -56,24 +121,48 @@ class ArcGISService:
         Returns:
             Key name containing snapshot URL, or None if not found
         """
-        # Common patterns for snapshot URL fields
-        patterns = ['image', 'snapshot', 'url', 'photo', 'picture', 'jpeg', 'jpg']
+        # If override is set, check if it exists
+        if self.snapshot_field_override:
+            if self.snapshot_field_override in attributes:
+                value = attributes[self.snapshot_field_override]
+                if self._is_valid_snapshot_url(value):
+                    logger.info(f"Using override snapshot field: {self.snapshot_field_override}")
+                    return self.snapshot_field_override
+                else:
+                    logger.warning(f"Override field '{self.snapshot_field_override}' found but value doesn't look like image URL: {value}")
+        
+        # Auto-detect pattern
+        pattern = re.compile(r'(image|snapshot|url|photo|picture|jpeg|jpg|camera)', re.IGNORECASE)
+        url_pattern = re.compile(r'^https?://.*\.(jpg|jpeg|png)(\?.*)?$', re.IGNORECASE)
         
         for key, value in attributes.items():
             if not isinstance(value, str):
                 continue
-                
-            key_lower = key.lower()
             
-            # Check if key matches common patterns
-            if any(pattern in key_lower for pattern in patterns):
-                # Validate it looks like a URL or image path
-                if value.startswith('http') or value.endswith(('.jpg', '.jpeg', '.png')):
-                    logger.info(f"Detected snapshot field: {key}")
+            # Check if key matches pattern
+            if pattern.search(key):
+                # Validate URL format
+                if url_pattern.match(value) or (value.startswith('http') and any(ext in value.lower() for ext in ['.jpg', '.jpeg', '.png'])):
+                    logger.info(f"Auto-detected snapshot field: {key}")
                     return key
         
         logger.warning("No snapshot field detected in attributes")
         return None
+    
+    def _is_valid_snapshot_url(self, value: str) -> bool:
+        """Check if value looks like a valid snapshot URL.
+        
+        Args:
+            value: String value to check
+            
+        Returns:
+            True if looks like image URL
+        """
+        if not isinstance(value, str):
+            return False
+        
+        url_pattern = re.compile(r'^https?://.*\.(jpg|jpeg|png)(\?.*)?$', re.IGNORECASE)
+        return bool(url_pattern.match(value)) or (value.startswith('http') and any(ext in value.lower() for ext in ['.jpg', '.jpeg', '.png']))
     
     def download_snapshot(self, url: str, timeout: int = 10) -> bytes:
         """Download camera snapshot image.
@@ -89,7 +178,7 @@ class ArcGISService:
             Exception: If download fails
         """
         try:
-            response = requests.get(url, timeout=timeout, stream=True)
+            response = requests.get(url, timeout=(5, timeout), stream=True)
             response.raise_for_status()
             
             # Read with size limit (1MB)

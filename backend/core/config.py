@@ -26,6 +26,7 @@ class Config:
     
     # TII Camera Integration
     TII_ARCGIS_LAYER_URL: str = os.environ.get('TII_ARCGIS_LAYER_URL', '')
+    TII_SNAPSHOT_FIELD: str = os.environ.get('TII_SNAPSHOT_FIELD', '')
     TII_POLL_INTERVAL_MIN: int = int(os.environ.get('TII_POLL_INTERVAL_MIN', 15))
     MAX_CAMERAS_PER_CYCLE: int = int(os.environ.get('MAX_CAMERAS_PER_CYCLE', 100))
 
