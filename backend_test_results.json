@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "tests_run": 9,
+    "tests_passed": 9,
+    "success_rate": 100.0
+  },
+  "test_results": [
+    {
+      "test": "Health endpoint returns correct response",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Detect endpoint accepts valid image",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Detect endpoint returns correct JSON schema",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Detect endpoint returns correct engine",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Detect endpoint accepts PNG images",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Detect endpoint rejects invalid file types",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Detect endpoint requires image file",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Detect endpoint handles large images",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Gemini 2.0 Flash integration working",
+      "success": true,
+      "details": ""
+    }
+  ]
+}
