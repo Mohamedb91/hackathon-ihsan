@@ -41,9 +41,9 @@ function HelpModal() {
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>TII Camera Integration Setup</DialogTitle>
+          <DialogTitle>TfL JamCams Integration Setup</DialogTitle>
           <DialogDescription>
-            How to configure and use the Traffic Camera integration
+            How to configure and use the TfL JamCams integration
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 text-sm">
