@@ -50,12 +50,14 @@ function HelpModal() {
           <div>
             <h4 className="font-semibold mb-2">Required Configuration</h4>
             <p className="text-slate-600 mb-2">
-              Set the TII ArcGIS FeatureServer layer URL in <code className="bg-slate-100 px-1 rounded">/app/backend/.env</code>:
+              TfL JamCams use the TfL Unified API endpoint:
             </p>
             <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
-TII_ENABLE=true
-TII_ARCGIS_LAYER_URL=https://example.com/FeatureServer/0
+GET {TFL_BASE}/Place/Type/JamCam[?app_id&app_key]
             </pre>
+            <p className="text-slate-500 text-xs mt-2">
+              Set in <code className="bg-slate-100 px-1 rounded">/app/backend/.env</code>
+            </p>
           </div>
           
           <div>
