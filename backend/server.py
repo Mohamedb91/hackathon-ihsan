@@ -98,7 +98,8 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    """Stop scheduler and close database connection."""
+    """Stop schedulers and close database connection."""
     logger.info("Shutting down...")
     await scheduler.stop()
+    await tfl_scheduler.stop()
     client.close()
