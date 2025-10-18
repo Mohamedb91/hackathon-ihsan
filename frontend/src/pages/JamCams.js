@@ -27,6 +27,9 @@ L.Marker.prototype.options.icon = DefaultIcon;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// TfL API endpoints
+const TFL_API = `${API}/tfl`;
+
 function HelpModal() {
   return (
     <Dialog>
