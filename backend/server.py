@@ -13,6 +13,7 @@ from app import app as pothole_app, gemini_engine
 from routes import tii_routes
 from services.tii_scheduler import TIIScheduler
 from services.arcgis_service import ArcGISService
+from core.config import config
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
