@@ -1,23 +1,86 @@
 [
   {
-    "cameraId": "JamCams_Demo_001",
-    "name": "London Bridge Road",
-    "lat": 51.5074,
-    "lon": -0.1278,
-    "imageUrl": "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=800&q=80"
+    "cameraId": "JamCams_A10_Stamford_Hill",
+    "name": "A10 Stamford Hill N/B",
+    "lat": 51.5733,
+    "lon": -0.0765,
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/A10_Stamford_Hill_-_geograph.org.uk_-_4514425.jpg/1024px-A10_Stamford_Hill_-_geograph.org.uk_-_4514425.jpg"
   },
   {
-    "cameraId": "JamCams_Demo_002",
-    "name": "Oxford Street",
-    "lat": 51.5155,
-    "lon": -0.0922,
-    "imageUrl": "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&q=80"
-  },
-  {
-    "cameraId": "JamCams_Demo_003",
-    "name": "Camden High Street",
+    "cameraId": "JamCams_Hackney_Road",
+    "name": "Hackney Road E/B",
     "lat": 51.5310,
-    "lon": -0.1239,
-    "imageUrl": "https://images.unsplash.com/photo-1464219789935-c2d9d9aba644?w=800&q=80"
+    "lon": -0.0735,
+    "imageUrl": "https://live.staticflickr.com/65535/52024395002_f9e6e3c3e4_b.jpg"
+  },
+  {
+    "cameraId": "JamCams_Old_Kent_Road",
+    "name": "Old Kent Road S/B",
+    "lat": 51.4820,
+    "lon": -0.0591,
+    "imageUrl": "https://live.staticflickr.com/4480/37816161652_c18dc356e3_b.jpg"
+  },
+  {
+    "cameraId": "JamCams_Lea_Bridge_Road",
+    "name": "Lea Bridge Road E/B",
+    "lat": 51.5615,
+    "lon": -0.0242,
+    "imageUrl": "https://live.staticflickr.com/1931/44827056014_f46a75b8df_b.jpg"
+  },
+  {
+    "cameraId": "JamCams_Seven_Sisters_Road",
+    "name": "Seven Sisters Road W/B",
+    "lat": 51.5635,
+    "lon": -0.1030,
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Seven_Sisters_Road_-_geograph.org.uk_-_1517895.jpg/1024px-Seven_Sisters_Road_-_geograph.org.uk_-_1517895.jpg"
+  },
+  {
+    "cameraId": "JamCams_Forest_Road_Walthamstow",
+    "name": "Forest Road, Walthamstow",
+    "lat": 51.5857,
+    "lon": -0.0251,
+    "imageUrl": "https://live.staticflickr.com/4817/32665832278_c77d950f87_b.jpg"
+  },
+  {
+    "cameraId": "JamCams_Barking_Road",
+    "name": "Barking Road E/B",
+    "lat": 51.5201,
+    "lon": 0.0394,
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Barking_Road_-_geograph.org.uk_-_1583814.jpg/1024px-Barking_Road_-_geograph.org.uk_-_1583814.jpg"
+  },
+  {
+    "cameraId": "JamCams_Leytonstone_High_Road",
+    "name": "Leytonstone High Road",
+    "lat": 51.5683,
+    "lon": 0.0084,
+    "imageUrl": "https://live.staticflickr.com/3895/14851373526_c924f53e3e_b.jpg"
+  },
+  {
+    "cameraId": "JamCams_Balham_High_Road",
+    "name": "Balham High Road S/B",
+    "lat": 51.4431,
+    "lon": -0.1524,
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Balham_High_Road_-_geograph.org.uk_-_1406651.jpg/1024px-Balham_High_Road_-_geograph.org.uk_-_1406651.jpg"
+  },
+  {
+    "cameraId": "JamCams_Mitcham_Lane",
+    "name": "Mitcham Lane, Streatham",
+    "lat": 51.4266,
+    "lon": -0.1325,
+    "imageUrl": "https://live.staticflickr.com/4375/36587076461_5c0e6b1d61_b.jpg"
+  },
+  {
+    "cameraId": "JamCams_Croydon_Road_Penge",
+    "name": "Croydon Road, Penge",
+    "lat": 51.4172,
+    "lon": -0.0618,
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Croydon_Road%2C_Penge_-_geograph.org.uk_-_1770633.jpg/1024px-Croydon_Road%2C_Penge_-_geograph.org.uk_-_1770633.jpg"
+  },
+  {
+    "cameraId": "JamCams_Southend_Lane_Bellingham",
+    "name": "Southend Lane, Bellingham",
+    "lat": 51.4408,
+    "lon": -0.0158,
+    "imageUrl": "https://live.staticflickr.com/7916/47365820431_ab2d89dce2_b.jpg"
   }
 ]
