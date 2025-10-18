@@ -228,6 +228,131 @@ BACKEND_URL=$(cat /app/frontend/.env | grep REACT_APP_BACKEND_URL | cut -d'=' -f
 curl "${BACKEND_URL}/api/health"
 ```
 
+### TII camera integration issues
+
+```bash
+# Check TII scheduler status
+curl "${BACKEND_URL}/api/tii/status"
+
+# Manually sync cameras
+curl -X POST "${BACKEND_URL}/api/tii/sync-cameras"
+
+# Manually trigger detection cycle
+curl -X POST "${BACKEND_URL}/api/tii/run-once"
+
+# View cameras
+curl "${BACKEND_URL}/api/tii/cameras" | python -m json.tool
+```
+
+**Common issues:**
+- **No cameras synced**: Verify `TII_ARCGIS_LAYER_URL` is correct in `.env`
+- **Detection errors**: Check snapshot URLs are accessible from the server
+- **Scheduler not running**: Check backend logs for startup errors
+
+## TII Camera Integration
+
+### Configuration
+
+Set the TII ArcGIS FeatureServer URL in `/app/backend/.env`:
+
+```bash
+TII_ARCGIS_LAYER_URL=https://trafficview.tii.ie/server/rest/services/Hosted/CCTVs/FeatureServer/0
+TII_POLL_INTERVAL_MIN=15
+MAX_CAMERAS_PER_CYCLE=100
+```
+
+### Usage
+
+1. **Sync Cameras** (one-time setup):
+   ```bash
+   curl -X POST "${BACKEND_URL}/api/tii/sync-cameras"
+   ```
+   This fetches all camera locations and metadata from the TII ArcGIS FeatureServer.
+
+2. **Access Traffic Cams Page**:
+   Navigate to `http://your-app/traffic-cams` to view the interactive map.
+
+3. **Manual Detection Run**:
+   Use the "Run Now" button on the web interface or call:
+   ```bash
+   curl -X POST "${BACKEND_URL}/api/tii/run-once"
+   ```
+
+### How It Works
+
+1. **Camera Discovery**: The system queries the TII ArcGIS FeatureServer to discover all active traffic cameras.
+
+2. **Snapshot Detection**: The system automatically detects which attribute field contains the camera snapshot URL (looks for fields containing "image", "snapshot", "url", etc.).
+
+3. **Scheduled Polling**: Every 15 minutes (configurable), the scheduler:
+   - Fetches snapshots from active cameras
+   - Runs Gemini pothole detection
+   - Stores results in MongoDB `observations` collection
+   - Updates camera `lastSeenAt` timestamp
+
+4. **Visualization**: The frontend displays:
+   - Interactive Leaflet map with camera markers
+   - Click any marker to view camera details
+   - Latest snapshot with bounding boxes overlay
+   - Detection results and historical timeline
+
+### Data Model
+
+**cameras collection**:
+```json
+{
+  "cameraId": "string",
+  "name": "string",
+  "lat": 53.3498,
+  "lon": -6.2603,
+  "snapshotField": "ImageURL",
+  "lastSnapshotUrl": "https://...",
+  "lastSeenAt": "2025-10-18T14:30:00Z",
+  "active": true,
+  "raw": { }
+}
+```
+
+**observations collection**:
+```json
+{
+  "cameraId": "string",
+  "timestamp": "2025-10-18T14:30:00Z",
+  "snapshotUrl": "https://...",
+  "potholes_present": true,
+  "count": 2,
+  "boxes": [
+    {"x": 120, "y": 300, "w": 210, "h": 95, "confidence": 0.87}
+  ],
+  "engine": "gemini",
+  "notes": "Model: gemini-2.0-flash",
+  "errored": false,
+  "errorMessage": null
+}
+```
+
+### API Endpoints
+
+- `POST /api/tii/sync-cameras` - Sync cameras from TII ArcGIS
+- `POST /api/tii/run-once` - Manually trigger one detection cycle
+- `GET /api/tii/status` - Get scheduler status
+- `GET /api/tii/cameras` - List all cameras
+- `GET /api/tii/cameras/{cameraId}/latest` - Get latest observation for a camera
+- `GET /api/tii/observations?cameraId={id}&limit={n}` - List observations
+
+### Attribution & License
+
+This application uses data from **Transport Infrastructure Ireland (TII)**:
+- Data source: [TII Traffic View](https://trafficview.tii.ie)
+- License: [Creative Commons Attribution 4.0 (CC-BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
+- Attribution is displayed on the Traffic Cams page footer
+
+**Important Notes:**
+- Respect the 15-minute polling interval (never hammer the TII servers)
+- Traffic camera images are public but may have low resolution for pothole detection
+- Motorway cameras often have wide-angle, high-FOV views where small potholes may not be visible
+- This is a proof-of-concept for infrastructure monitoring; production deployments should coordinate with TII
+
 ## License
 
 MIT
