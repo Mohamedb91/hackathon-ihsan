@@ -6,23 +6,41 @@ from core.config import config
 
 logger = logging.getLogger(__name__)
 
+class TIIValidationStatus:
+    """Singleton to hold TII validation state."""
+    def __init__(self):
+        self.enabled = config.TII_ENABLE
+        self.validated = False
+        self.validation_error: Optional[str] = None
+    
+    def set_validated(self, success: bool, error: Optional[str] = None):
+        self.validated = success
+        self.validation_error = error
+
+# Global singleton instance
+tii_status = TIIValidationStatus()
+
 class ArcGISService:
     """Service for fetching TII camera data from ArcGIS REST API."""
     
     def __init__(self):
         self.layer_url = config.TII_ARCGIS_LAYER_URL
         self.snapshot_field_override = config.TII_SNAPSHOT_FIELD
-        self.validation_error = None
         
     def validate_layer_url(self) -> bool:
         """Validate the ArcGIS FeatureServer layer URL.
         
         Returns:
-            True if valid, False otherwise. Sets self.validation_error on failure.
+            True if valid, False otherwise. Updates global tii_status.
         """
+        if not config.TII_ENABLE:
+            tii_status.set_validated(False, "TII disabled by configuration (TII_ENABLE=false)")
+            logger.info("TII integration disabled by config")
+            return False
+            
         if not self.layer_url:
-            self.validation_error = "TII_ARCGIS_LAYER_URL not configured in .env"
-            logger.error(f"ERROR: {self.validation_error}")
+            tii_status.set_validated(False, "TII_ARCGIS_LAYER_URL not configured in .env")
+            logger.warning("TII_ARCGIS_LAYER_URL not configured")
             return False
             
         try:
@@ -35,41 +53,50 @@ class ArcGISService:
             }
             
             logger.info(f"Validating TII ArcGIS layer: {query_url}")
-            response = requests.get(query_url, params=params, timeout=10)
+            response = requests.get(query_url, params=params, timeout=(5, 10))
             response.raise_for_status()
             
             data = response.json()
             
             if 'error' in data:
-                self.validation_error = f"ArcGIS API error: {data['error'].get('message', 'Unknown error')}"
-                logger.error(f"ERROR: {self.validation_error}")
+                error_msg = f"ArcGIS API error: {data['error'].get('message', 'Unknown error')}"
+                tii_status.set_validated(False, error_msg)
+                logger.error(f"ERROR: TII validation failed: {error_msg}. Integration disabled. Provide a FeatureServer layer URL (.../FeatureServer/0).")
                 return False
             
             features = data.get('features', [])
             if not features:
-                self.validation_error = (
+                error_msg = (
                     "Invalid ArcGIS FeatureServer layer. No features returned. "
-                    "Provide a valid FeatureServer layer root URL (e.g., https://example.com/FeatureServer/0). "
-                    f"Test URL: {query_url}?where=1%3D1&outFields=*&returnGeometry=true&f=json"
+                    "Provide a valid FeatureServer layer root URL (e.g., https://example.com/FeatureServer/0)."
                 )
-                logger.error(f"ERROR: {self.validation_error}")
+                tii_status.set_validated(False, error_msg)
+                logger.error(f"ERROR: TII validation failed: {error_msg}. Integration disabled.")
                 return False
             
             logger.info(f"✓ TII ArcGIS layer validated successfully ({len(features)} features found)")
-            self.validation_error = None
+            tii_status.set_validated(True, None)
             return True
             
-        except requests.exceptions.Timeout:
-            self.validation_error = f"Timeout connecting to ArcGIS layer: {self.layer_url}"
-            logger.error(f"ERROR: {self.validation_error}")
+        except requests.exceptions.Timeout as e:
+            error_msg = f"Timeout connecting to ArcGIS layer (5s connect, 10s read): {self.layer_url}"
+            tii_status.set_validated(False, error_msg)
+            logger.error(f"ERROR: TII validation failed: {error_msg}. Integration disabled. Provide a FeatureServer layer URL (.../FeatureServer/0).")
+            return False
+        except requests.exceptions.ConnectionError as e:
+            error_msg = f"DNS resolution or network error connecting to ArcGIS layer: {str(e)[:200]}"
+            tii_status.set_validated(False, error_msg)
+            logger.error(f"ERROR: TII validation failed: {error_msg}. Integration disabled. Provide a FeatureServer layer URL (.../FeatureServer/0).")
             return False
         except requests.exceptions.RequestException as e:
-            self.validation_error = f"Failed to connect to ArcGIS layer: {str(e)}"
-            logger.error(f"ERROR: {self.validation_error}")
+            error_msg = f"Failed to connect to ArcGIS layer: {str(e)[:200]}"
+            tii_status.set_validated(False, error_msg)
+            logger.error(f"ERROR: TII validation failed: {error_msg}. Integration disabled. Provide a FeatureServer layer URL (.../FeatureServer/0).")
             return False
         except Exception as e:
-            self.validation_error = f"Unexpected error validating layer: {str(e)}"
-            logger.error(f"ERROR: {self.validation_error}", exc_info=True)
+            error_msg = f"Unexpected error validating layer: {str(e)[:200]}"
+            tii_status.set_validated(False, error_msg)
+            logger.error(f"ERROR: TII validation failed: {error_msg}. Integration disabled.", exc_info=True)
             return False
         
     def fetch_tii_features(self) -> List[Dict[str, Any]]:
@@ -95,7 +122,7 @@ class ArcGISService:
             }
             
             logger.info(f"Fetching TII features from {query_url}")
-            response = requests.get(query_url, params=params, timeout=30)
+            response = requests.get(query_url, params=params, timeout=(5, 30))
             response.raise_for_status()
             
             data = response.json()
@@ -164,12 +191,11 @@ class ArcGISService:
         url_pattern = re.compile(r'^https?://.*\.(jpg|jpeg|png)(\?.*)?$', re.IGNORECASE)
         return bool(url_pattern.match(value)) or (value.startswith('http') and any(ext in value.lower() for ext in ['.jpg', '.jpeg', '.png']))
     
-    def download_snapshot(self, url: str, timeout: int = 10) -> bytes:
+    def download_snapshot(self, url: str) -> bytes:
         """Download camera snapshot image.
         
         Args:
             url: Snapshot image URL
-            timeout: Request timeout in seconds
             
         Returns:
             Image bytes
@@ -178,7 +204,7 @@ class ArcGISService:
             Exception: If download fails
         """
         try:
-            response = requests.get(url, timeout=(5, timeout), stream=True)
+            response = requests.get(url, timeout=(5, 10), stream=True)
             response.raise_for_status()
             
             # Read with size limit (1MB)

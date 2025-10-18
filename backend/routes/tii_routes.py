@@ -4,7 +4,7 @@ from typing import List, Optional
 import logging
 from datetime import datetime, timezone
 
-from services.arcgis_service import ArcGISService
+from services.arcgis_service import ArcGISService, tii_status
 from services.tii_scheduler import TIIScheduler
 from models import Camera, Observation
 
@@ -21,24 +21,60 @@ def get_db():
     from server import db
     return db
 
+@router.get("/status")
+async def get_status(db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Get TII integration status.
+    
+    Returns:
+        Status information including enabled, validated, validation errors, and scheduler state
+    """
+    cameras_active = 0
+    cameras_total = 0
+    
+    # Only query DB if TII is validated
+    if tii_status.validated:
+        cameras_active = await db.cameras.count_documents({'active': True})
+        cameras_total = await db.cameras.count_documents({})
+    
+    status = {
+        'enabled': tii_status.enabled,
+        'validated': tii_status.validated,
+        'validationError': tii_status.validation_error,
+        'camerasActive': cameras_active,
+        'camerasTotal': cameras_total,
+        'lastRunAt': None,
+        'nextRunAt': None,
+        'lastCycle': {'processed': 0, 'ok': 0, 'errors': 0}
+    }
+    
+    if scheduler:
+        scheduler_status = scheduler.get_status()
+        status['lastRunAt'] = scheduler_status.get('lastRunAt')
+        status['nextRunAt'] = scheduler_status.get('nextRunAt')
+        status['lastCycle'] = scheduler_status.get('lastCycle', {'processed': 0, 'ok': 0, 'errors': 0})
+    
+    return status
+
 @router.post("/sync-cameras")
 async def sync_cameras(db: AsyncIOMotorDatabase = Depends(get_db)):
     """Sync cameras from TII ArcGIS FeatureServer.
     
-    Fetches all camera features and upserts into the database.
+    Requires TII to be validated. Fetches all camera features and upserts into the database.
     
     Returns:
         Statistics about synced cameras
+        
+    Raises:
+        409: If TII not validated
     """
+    if not tii_status.validated:
+        raise HTTPException(
+            status_code=409,
+            detail=f"TII not validated; check /api/tii/status. Error: {tii_status.validation_error or 'Not enabled or URL invalid'}"
+        )
+    
     if not arcgis_service:
         raise HTTPException(status_code=500, detail="ArcGIS service not initialized")
-    
-    # Validate layer URL first
-    if not arcgis_service.validate_layer_url():
-        raise HTTPException(
-            status_code=400,
-            detail=arcgis_service.validation_error or "Invalid ArcGIS layer URL"
-        )
     
     try:
         features = arcgis_service.fetch_tii_features()
@@ -105,7 +141,7 @@ async def sync_cameras(db: AsyncIOMotorDatabase = Depends(get_db)):
             }
             
             if not active:
-                camera_doc['inactiveReason'] = "No snapshot field detected"
+                camera_doc['inactiveReason'] = "No snapshot URL field"
                 camera_doc['raw']['missingSnapshotField'] = True
                 inactive += 1
             
@@ -147,22 +183,33 @@ async def sync_cameras(db: AsyncIOMotorDatabase = Depends(get_db)):
 @router.post("/run-once")
 async def run_once(
     limit: int = Query(default=50, ge=1, le=100),
-    camera_id: Optional[str] = Query(default=None)
+    cameraId: Optional[str] = Query(default=None, alias="cameraId")
 ):
     """Manually trigger one polling cycle.
     
+    Requires TII to be validated.
+    
     Args:
         limit: Maximum number of cameras to process
-        camera_id: Optional camera ID to process only one camera
+        cameraId: Optional camera ID to process only one camera
     
     Returns:
         Cycle statistics
+        
+    Raises:
+        409: If TII not validated
     """
+    if not tii_status.validated:
+        raise HTTPException(
+            status_code=409,
+            detail=f"TII not validated; check /api/tii/status. Error: {tii_status.validation_error or 'Not enabled or URL invalid'}"
+        )
+    
     if not scheduler:
         raise HTTPException(status_code=500, detail="Scheduler not initialized")
     
     try:
-        stats = await scheduler.run_cycle(limit=limit, camera_id=camera_id)
+        stats = await scheduler.run_cycle(limit=limit, camera_id=cameraId)
         return {
             'success': True,
             'stats': stats
@@ -170,35 +217,6 @@ async def run_once(
     except Exception as e:
         logger.error(f"Manual run failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Run failed: {str(e)}")
-
-@router.get("/status")
-async def get_status(db: AsyncIOMotorDatabase = Depends(get_db)):
-    """Get scheduler and camera status.
-    
-    Returns:
-        Status information
-    """
-    cameras_active = await db.cameras.count_documents({'active': True})
-    cameras_total = await db.cameras.count_documents({})
-    
-    status = {
-        'camerasActive': cameras_active,
-        'camerasTotal': cameras_total,
-        'lastRunAt': None,
-        'nextRunAt': None,
-        'lastCycle': {'processed': 0, 'ok': 0, 'errors': 0},
-        'validationError': None
-    }
-    
-    # Check for validation errors
-    if arcgis_service and arcgis_service.validation_error:
-        status['validationError'] = arcgis_service.validation_error
-    
-    if scheduler:
-        scheduler_status = scheduler.get_status()
-        status.update(scheduler_status)
-    
-    return status
 
 @router.get("/cameras")
 async def list_cameras(db: AsyncIOMotorDatabase = Depends(get_db)):
@@ -247,22 +265,22 @@ async def get_camera_latest(camera_id: str, db: AsyncIOMotorDatabase = Depends(g
 
 @router.get("/observations")
 async def list_observations(
-    camera_id: Optional[str] = None,
+    cameraId: Optional[str] = Query(default=None, alias="cameraId"),
     limit: int = 10,
     db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """List observations with optional camera filter.
     
     Args:
-        camera_id: Optional camera ID filter
+        cameraId: Optional camera ID filter
         limit: Maximum number of results
         
     Returns:
         List of observations
     """
     query = {}
-    if camera_id:
-        query['cameraId'] = camera_id
+    if cameraId:
+        query['cameraId'] = cameraId
     
     observations = await db.observations.find(
         query,
