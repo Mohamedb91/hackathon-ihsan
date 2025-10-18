@@ -564,7 +564,7 @@ export default function TrafficCams() {
 
   const loadCameras = async () => {
     try {
-      const res = await fetch(`${API}/tii/cameras`);
+      const res = await fetch(`${TFL_API}/cameras`);
       if (res.ok) {
         const data = await res.json();
         setCameras(data);
@@ -576,7 +576,7 @@ export default function TrafficCams() {
 
   const loadStatus = async () => {
     try {
-      const res = await fetch(`${API}/tii/status`);
+      const res = await fetch(`${TFL_API}/status`);
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
@@ -594,10 +594,10 @@ export default function TrafficCams() {
   const handleSyncCameras = async () => {
     setSyncing(true);
     try {
-      const res = await fetch(`${API}/tii/sync-cameras`, { method: 'POST' });
+      const res = await fetch(`${TFL_API}/sync`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
-        toast.success(`Synced: ${data.inserted} new, ${data.updated} updated, ${data.camerasActive} active`);
+        toast.success(`Synced: ${data.inserted} new, ${data.updated} updated, ${data.camerasActive} active (${data.source})`);
         await loadData();
       } else {
         const error = await res.json();
@@ -614,7 +614,7 @@ export default function TrafficCams() {
   const handleRunNow = async () => {
     setRunning(true);
     try {
-      const res = await fetch(`${API}/tii/run-once?limit=50`, { method: 'POST' });
+      const res = await fetch(`${TFL_API}/run-once?limit=50`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         toast.success(`Processed ${data.stats.processed} cameras (${data.stats.ok} ok, ${data.stats.errors} errors)`);
