@@ -777,30 +777,30 @@ export default function TrafficCams() {
             )}
           </CardContent>
         </Card>
-      </div>
+        </div>
 
-      {/* Attribution */}
-      <div className="absolute bottom-4 right-4 z-[999] bg-white rounded-lg shadow-lg px-4 py-2">
-        <p className="text-xs text-slate-600">
-          Source:{' '}
-          <a
-            href="https://data.gov.ie/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            Transport Infrastructure Ireland (CC-BY 4.0)
-          </a>
-        </p>
-      </div>
+        {/* Attribution */}
+        <div className="absolute bottom-4 right-4 z-[999] bg-white rounded-lg shadow-lg px-4 py-2">
+          <p className="text-xs text-slate-600">
+            Source:{' '}
+            <a
+              href="https://data.gov.ie/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              Transport Infrastructure Ireland (CC-BY 4.0)
+            </a>
+          </p>
+        </div>
 
-      {/* Camera Drawer */}
-      {selectedCamera && (
-        <CameraDrawer
-          camera={selectedCamera}
-          onClose={() => setSelectedCamera(null)}
-        />
-      )}
+        {/* Camera Drawer */}
+        {selectedCamera && (
+          <CameraDrawer
+            camera={selectedCamera}
+            onClose={() => setSelectedCamera(null)}
+          />
+        )}
       </div>
     </div>
   );
