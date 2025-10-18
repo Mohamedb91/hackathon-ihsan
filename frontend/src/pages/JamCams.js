@@ -186,12 +186,12 @@ function EmptyState({ onSync, syncing }) {
             <p className="text-xs text-slate-500">
               Source:{' '}
               <a
-                href="https://data.gov.ie/"
+                href="https://tfl.gov.uk/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline"
               >
-                Transport Infrastructure Ireland (CC-BY 4.0)
+                Transport for London (TfL) – JamCams (Unified API)
               </a>
             </p>
           </div>
