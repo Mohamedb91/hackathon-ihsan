@@ -691,10 +691,9 @@ export default function TrafficCams() {
         >
           <MapView cameras={filteredCameras} onCameraClick={setSelectedCamera} />
         </MapContainer>
-      </MapContainer>
 
-      {/* Sidebar with Controls */}
-      <div className="absolute top-4 left-4 z-[999] space-y-2 max-w-sm">
+        {/* Sidebar with Controls */}
+        <div className="absolute top-4 left-4 z-[999] space-y-2 max-w-sm">
         <Card className="shadow-lg">
           <CardContent className="p-4 space-y-3">
             <h1 className="text-xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
