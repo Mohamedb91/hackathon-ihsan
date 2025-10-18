@@ -12,7 +12,7 @@ from app import app as pothole_app, gemini_engine
 # Import TII routes and scheduler
 from routes import tii_routes
 from services.tii_scheduler import TIIScheduler
-from services.arcgis_service import ArcGISService
+from services.arcgis_service import ArcGISService, tii_status
 from core.config import config
 
 ROOT_DIR = Path(__file__).parent
