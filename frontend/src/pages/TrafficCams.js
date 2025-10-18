@@ -50,8 +50,22 @@ function HelpModal() {
               Set the TII ArcGIS FeatureServer layer URL in <code className="bg-slate-100 px-1 rounded">/app/backend/.env</code>:
             </p>
             <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
+TII_ENABLE=true
 TII_ARCGIS_LAYER_URL=https://example.com/FeatureServer/0
             </pre>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-2">Disable TII in Locked-Down Environments</h4>
+            <p className="text-slate-600 mb-2">
+              If you're in a DNS-isolated or restricted environment, disable TII:
+            </p>
+            <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
+TII_ENABLE=false
+            </pre>
+            <p className="text-slate-500 text-xs mt-2">
+              Core pothole detection (/detect) will continue to work normally.
+            </p>
           </div>
           
           <div>
@@ -67,7 +81,7 @@ https://trafficview.tii.ie/server/rest/services/Hosted/CCTVs/FeatureServer/0
           <div>
             <h4 className="font-semibold mb-2">Test Your URL</h4>
             <p className="text-slate-600 mb-2">
-              Validate your FeatureServer URL by appending the query parameters:
+              Validate your FeatureServer URL (5s connect, 10s read timeout):
             </p>
             <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
 /query?where=1%3D1&outFields=*&returnGeometry=true&f=json
@@ -83,23 +97,68 @@ https://trafficview.tii.ie/server/rest/services/Hosted/CCTVs/FeatureServer/0
               If auto-detection fails, specify the snapshot URL field:
             </p>
             <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
-TII_SNAPSHOT_FIELD=ImageURL
+TII_SNAPSHOT_FIELD=SNAPSHOT_URL
             </pre>
           </div>
           
           <div>
-            <h4 className="font-semibold mb-2">Steps to Get Started</h4>
-            <ol className="list-decimal list-inside space-y-1 text-slate-600">
-              <li>Configure TII_ARCGIS_LAYER_URL in backend .env</li>
-              <li>Restart the backend server</li>
-              <li>Click "Sync Cameras" button to discover cameras</li>
-              <li>Wait for automatic polling or click "Run Now"</li>
-            </ol>
+            <h4 className="font-semibold mb-2">15-Minute Snapshot Cadence</h4>
+            <p className="text-slate-600 text-sm">
+              The system polls cameras every 15 minutes (configurable). This respects bandwidth and avoids hammering external services.
+            </p>
+          </div>
+          
+          <div className="pt-2 border-t">
+            <p className="text-xs text-slate-500">
+              Data Attribution: <strong>Transport Infrastructure Ireland (CC-BY 4.0)</strong>
+            </p>
           </div>
         </div>
       </DialogContent>
     </Dialog>
   );
+}
+
+function StatusBanner({ status }) {
+  if (!status) return null;
+  
+  if (!status.enabled) {
+    return (
+      <div className="bg-slate-100 border-l-4 border-slate-500 p-4" data-testid="status-banner-disabled">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-slate-600 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-semibold text-slate-900">TII Disabled by Configuration</h3>
+            <p className="text-sm text-slate-600 mt-1">
+              TII camera integration is disabled (TII_ENABLE=false). Core pothole detection remains fully functional.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!status.validated && status.validationError) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-500 p-4" data-testid="status-banner-error">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-semibold text-red-900">TII Validation Failed</h3>
+            <p className="text-sm text-red-700 mt-1">
+              {status.validationError}
+            </p>
+            <p className="text-xs text-red-600 mt-2">
+              Core pothole detection (/detect) is still available. Click Help for setup instructions.
+            </p>
+          </div>
+          <HelpModal />
+        </div>
+      </div>
+    );
+  }
+  
+  return null;
 }
 
 function EmptyState({ onSync, syncing }) {
