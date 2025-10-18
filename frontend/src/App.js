@@ -87,6 +87,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/detector" element={<PotholeDetector />} />
           <Route path="/traffic-cams" element={<TrafficCams />} />
+          <Route path="/jamcams" element={<JamCams />} />
         </Routes>
       </BrowserRouter>
     </>
