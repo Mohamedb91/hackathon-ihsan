@@ -13,7 +13,7 @@ A minimal, production-ready service that detects potholes in city images using *
 
 - **Backend**: Python 3.11+, FastAPI, Uvicorn, emergentintegrations
 - **Frontend**: React 19, Tailwind CSS, shadcn/ui
-- **Vision Model**: Google Gemini 2.5 Flash (`gemini-2.5-flash-preview-04-17`)
+- **Vision Model**: Google Gemini 2.0 Flash (`gemini-2.0-flash`)
 
 ## Project Structure
 
