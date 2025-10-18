@@ -78,10 +78,10 @@ class TfLScheduler:
             camera_id: Optional camera ID to process only one camera
         
         Returns:
-            Stats dictionary with processed, ok, errors counts
+            Stats dictionary with processed, ok, errors, notFound404 counts
         """
         self.last_run_at = datetime.now(timezone.utc)
-        stats = {'processed': 0, 'ok': 0, 'errors': 0}
+        stats = {'processed': 0, 'ok': 0, 'errors': 0, 'notFound404': 0}
         
         try:
             # If camera_id provided, process only that camera
