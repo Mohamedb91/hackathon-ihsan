@@ -5,8 +5,8 @@ import logging
 from PIL import Image
 from typing import Dict, Any
 from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
-from ..schemas import DetectionResult, Box
-from ..core.config import config
+from schemas import DetectionResult, Box
+from core.config import config
 
 logger = logging.getLogger(__name__)
 
