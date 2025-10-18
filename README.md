@@ -99,7 +99,7 @@ Detect potholes in an uploaded image.
       "confidence": 0.79
     }
   ],
-  "notes": "Model: gemini-2.5-flash-preview-04-17"
+  "notes": "Model: gemini-2.0-flash"
 }
 ```
 
