@@ -53,7 +53,7 @@ function HelpModal() {
               TfL JamCams use the TfL Unified API endpoint:
             </p>
             <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
-GET {TFL_BASE}/Place/Type/JamCam[?app_id&app_key]
+GET https://api.tfl.gov.uk/Place/Type/JamCam
             </pre>
             <p className="text-slate-500 text-xs mt-2">
               Set in <code className="bg-slate-100 px-1 rounded">/app/backend/.env</code>
