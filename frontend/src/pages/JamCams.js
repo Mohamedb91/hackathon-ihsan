@@ -106,9 +106,10 @@ function StatusBanner({ status }) {
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-slate-600 mt-0.5" />
           <div className="flex-1">
-            <h3 className="font-semibold text-slate-900">TII Disabled by Configuration</h3>
+            <h3 className="font-semibold text-slate-900">JamCams Disabled by Configuration</h3>
             <p className="text-sm text-slate-600 mt-1">
-              TII camera integration is disabled (TII_ENABLE=false). Core pothole detection remains fully functional.
+              JamCams integration is disabled (TFL_ENABLE=false). 
+              {status.isSeeded && " Showing seeded cameras for demo."}
             </p>
           </div>
         </div>
@@ -116,19 +117,23 @@ function StatusBanner({ status }) {
     );
   }
   
-  if (!status.validated && status.validationError) {
+  if (status.degraded) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4" data-testid="status-banner-error">
+      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4" data-testid="status-banner-degraded">
         <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
           <div className="flex-1">
-            <h3 className="font-semibold text-red-900">TII Validation Failed</h3>
-            <p className="text-sm text-red-700 mt-1">
-              {status.validationError}
+            <h3 className="font-semibold text-yellow-900">
+              {status.isSeeded ? 'JamCams API Unavailable - Using Seed File' : 'JamCams Service Degraded'}
+            </h3>
+            <p className="text-sm text-yellow-700 mt-1">
+              {status.validationError || 'JamCams API unavailable. Showing seeded cameras.'}
             </p>
-            <p className="text-xs text-red-600 mt-2">
-              Core pothole detection (/detect) is still available. Click Help for setup instructions.
-            </p>
+            {status.lastCycle && status.lastCycle.notFound404 > 0 && (
+              <p className="text-xs text-yellow-600 mt-2">
+                Last cycle: {status.lastCycle.notFound404} camera(s) returned 404 (skipped)
+              </p>
+            )}
           </div>
           <HelpModal />
         </div>
