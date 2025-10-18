@@ -662,19 +662,35 @@ export default function TrafficCams() {
 
   // Show empty state if no cameras
   if (cameras.length === 0) {
-    return <EmptyState onSync={handleSyncCameras} syncing={syncing} />;
+    return (
+      <div className="min-h-screen flex flex-col">
+        {/* Status Banner */}
+        <StatusBanner status={status} />
+        
+        {/* Empty State */}
+        <div className="flex-1">
+          <EmptyState onSync={handleSyncCameras} syncing={syncing} />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="relative h-screen">
-      {/* Map */}
-      <MapContainer
-        center={[53.3498, -6.2603]} // Dublin, Ireland
-        zoom={7}
-        style={{ height: '100%', width: '100%' }}
-        data-testid="traffic-cams-map"
-      >
-        <MapView cameras={filteredCameras} onCameraClick={setSelectedCamera} />
+    <div className="relative h-screen flex flex-col">
+      {/* Status Banner */}
+      <StatusBanner status={status} />
+      
+      {/* Map Container */}
+      <div className="flex-1 relative">
+        {/* Map */}
+        <MapContainer
+          center={[53.3498, -6.2603]} // Dublin, Ireland
+          zoom={7}
+          style={{ height: '100%', width: '100%' }}
+          data-testid="traffic-cams-map"
+        >
+          <MapView cameras={filteredCameras} onCameraClick={setSelectedCamera} />
+        </MapContainer>
       </MapContainer>
 
       {/* Sidebar with Controls */}
