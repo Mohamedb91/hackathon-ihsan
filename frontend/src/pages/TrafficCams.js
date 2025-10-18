@@ -802,6 +802,7 @@ export default function TrafficCams() {
           onClose={() => setSelectedCamera(null)}
         />
       )}
+      </div>
     </div>
   );
 }
