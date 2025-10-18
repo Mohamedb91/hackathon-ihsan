@@ -144,12 +144,43 @@ class TfLScheduler:
         
         Args:
             camera: Camera document from database
+            
+        Raises:
+            Special exception for 404s to track separately
         """
         camera_id = camera.get('cameraId')
         image_url = camera.get('imageUrl')
         
         if not image_url:
             raise ValueError(f"No imageUrl for camera {camera_id}")
+        
+        # HEAD check first to avoid downloading 404s
+        logger.info(f"HEAD check for TfL camera {camera_id}: {image_url}")
+        is_ok, status_code = self.tfl_service.head_ok(image_url)
+        
+        if not is_ok:
+            error_msg = f"HEAD {status_code or 'failed'} for {image_url}"
+            logger.warning(f"TfL camera {camera_id}: {error_msg}")
+            
+            # Store error observation
+            await self.db.tfl_observations.insert_one({
+                'cameraId': camera_id,
+                'timestamp': datetime.now(timezone.utc),
+                'snapshotUrl': image_url,
+                'potholes_present': False,
+                'count': 0,
+                'boxes': [],
+                'engine': 'gemini',
+                'notes': None,
+                'errored': True,
+                'errorMessage': error_msg
+            })
+            
+            # Raise special exception to indicate 404
+            if status_code == 404:
+                raise Exception("NOT_FOUND_404")
+            else:
+                raise Exception(error_msg)
         
         # Download image
         logger.info(f"Downloading image for TfL camera {camera_id} from {image_url}")
