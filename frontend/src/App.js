@@ -5,6 +5,7 @@ import axios from "axios";
 import { Toaster } from 'sonner';
 import PotholeDetector from './pages/PotholeDetector';
 import TrafficCams from './pages/TrafficCams';
+import JamCams from './pages/JamCams';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
