@@ -3,7 +3,9 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, RefreshCw, Camera, AlertCircle, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Loader2, RefreshCw, Camera, AlertCircle, X, HelpCircle, Search, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import L from 'leaflet';
 
@@ -24,6 +26,143 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+function HelpModal() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" data-testid="help-button">
+          <HelpCircle className="w-4 h-4 mr-2" />
+          Help
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>TII Camera Integration Setup</DialogTitle>
+          <DialogDescription>
+            How to configure and use the Traffic Camera integration
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 text-sm">
+          <div>
+            <h4 className="font-semibold mb-2">Required Configuration</h4>
+            <p className="text-slate-600 mb-2">
+              Set the TII ArcGIS FeatureServer layer URL in <code className="bg-slate-100 px-1 rounded">/app/backend/.env</code>:
+            </p>
+            <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
+TII_ARCGIS_LAYER_URL=https://example.com/FeatureServer/0
+            </pre>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-2">Example URL</h4>
+            <p className="text-slate-600 mb-2">
+              Transport Infrastructure Ireland (TII) example:
+            </p>
+            <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
+https://trafficview.tii.ie/server/rest/services/Hosted/CCTVs/FeatureServer/0
+            </pre>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-2">Test Your URL</h4>
+            <p className="text-slate-600 mb-2">
+              Validate your FeatureServer URL by appending the query parameters:
+            </p>
+            <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
+/query?where=1%3D1&outFields=*&returnGeometry=true&f=json
+            </pre>
+            <p className="text-slate-500 text-xs mt-2">
+              This should return a JSON response with a "features" array containing camera data.
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-2">Optional: Snapshot Field Override</h4>
+            <p className="text-slate-600 mb-2">
+              If auto-detection fails, specify the snapshot URL field:
+            </p>
+            <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
+TII_SNAPSHOT_FIELD=ImageURL
+            </pre>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-2">Steps to Get Started</h4>
+            <ol className="list-decimal list-inside space-y-1 text-slate-600">
+              <li>Configure TII_ARCGIS_LAYER_URL in backend .env</li>
+              <li>Restart the backend server</li>
+              <li>Click "Sync Cameras" button to discover cameras</li>
+              <li>Wait for automatic polling or click "Run Now"</li>
+            </ol>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EmptyState({ onSync, syncing }) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 z-[999]">
+      <Card className="max-w-2xl mx-4 shadow-2xl">
+        <CardContent className="p-8 text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+              <MapPin className="w-10 h-10 text-blue-600" />
+            </div>
+          </div>
+          
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+              No Cameras Loaded
+            </h2>
+            <p className="text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Set a valid ArcGIS FeatureServer layer URL in your backend configuration and sync cameras to get started.
+            </p>
+          </div>
+          
+          <div className="flex gap-3 justify-center">
+            <Button
+              onClick={onSync}
+              disabled={syncing}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              data-testid="empty-state-sync-btn"
+            >
+              {syncing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Sync Cameras
+                </>
+              )}
+            </Button>
+            
+            <HelpModal />
+          </div>
+          
+          <div className="pt-4 border-t">
+            <p className="text-xs text-slate-500">
+              Source:{' '}
+              <a
+                href="https://data.gov.ie/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                Transport Infrastructure Ireland (CC-BY 4.0)
+              </a>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 function MapView({ cameras, onCameraClick }) {
   const map = useMap();
@@ -54,6 +193,12 @@ function MapView({ cameras, onCameraClick }) {
             <div className="text-sm">
               <strong>{camera.name}</strong>
               <br />
+              {camera.active ? (
+                <span className="text-xs text-green-600">Active</span>
+              ) : (
+                <span className="text-xs text-slate-500">Inactive</span>
+              )}
+              <br />
               <span className="text-xs text-slate-500">Click to view details</span>
             </div>
           </Popup>
@@ -67,6 +212,7 @@ function CameraDrawer({ camera, onClose }) {
   const [observation, setObservation] = useState(null);
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [detecting, setDetecting] = useState(false);
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
 
@@ -82,7 +228,7 @@ function CameraDrawer({ camera, onClose }) {
 
   const loadCameraData = async () => {
     setLoading(true);
-    try {
+    try:
       // Load latest observation
       const obsRes = await fetch(`${API}/tii/cameras/${camera.cameraId}/latest`);
       if (obsRes.ok) {
@@ -101,6 +247,26 @@ function CameraDrawer({ camera, onClose }) {
       toast.error('Failed to load camera data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const runDetectionNow = async () => {
+    setDetecting(true);
+    try {
+      const res = await fetch(`${API}/tii/run-once?limit=1&camera_id=${camera.cameraId}`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`Detection complete: ${data.stats.ok} ok, ${data.stats.errors} errors`);
+        // Reload camera data
+        await loadCameraData();
+      } else {
+        throw new Error('Detection failed');
+      }
+    } catch (error) {
+      console.error('Detection error:', error);
+      toast.error('Failed to run detection');
+    } finally {
+      setDetecting(false);
     }
   };
 
@@ -166,6 +332,30 @@ function CameraDrawer({ camera, onClose }) {
           </div>
         ) : (
           <>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Camera Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Status:</span>
+                  <span className={`font-medium ${camera.active ? 'text-green-600' : 'text-slate-500'}`}>
+                    {camera.active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Coordinates:</span>
+                  <span className="font-mono text-xs">{camera.lat.toFixed(4)}, {camera.lon.toFixed(4)}</span>
+                </div>
+                {camera.lastSeenAt && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Last seen:</span>
+                    <span className="text-xs">{new Date(camera.lastSeenAt).toLocaleString()}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {observation && observation.snapshotUrl ? (
               <>
                 <Card>
@@ -237,6 +427,25 @@ function CameraDrawer({ camera, onClose }) {
               </Card>
             )}
 
+            <Button
+              onClick={runDetectionNow}
+              disabled={detecting || !camera.active}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              data-testid="run-detection-now-btn"
+            >
+              {detecting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Running Detection...
+                </>
+              ) : (
+                <>
+                  <Camera className="w-4 h-4 mr-2" />
+                  Run Detection Now
+                </>
+              )}
+            </Button>
+
             {timeline.length > 0 && (
               <Card>
                 <CardHeader>
@@ -267,17 +476,42 @@ function CameraDrawer({ camera, onClose }) {
 
 export default function TrafficCams() {
   const [cameras, setCameras] = useState([]);
+  const [filteredCameras, setFilteredCameras] = useState([]);
   const [selectedCamera, setSelectedCamera] = useState(null);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [running, setRunning] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showActiveOnly, setShowActiveOnly] = useState(false);
 
   useEffect(() => {
     loadData();
     const interval = setInterval(loadStatus, 30000); // Refresh status every 30s
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    filterCameras();
+  }, [cameras, searchTerm, showActiveOnly]);
+
+  const filterCameras = () => {
+    let filtered = cameras;
+    
+    if (showActiveOnly) {
+      filtered = filtered.filter(cam => cam.active);
+    }
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(cam => 
+        cam.name.toLowerCase().includes(term) ||
+        cam.cameraId.toLowerCase().includes(term)
+      );
+    }
+    
+    setFilteredCameras(filtered);
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -309,6 +543,11 @@ export default function TrafficCams() {
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
+        
+        // Show validation error if present
+        if (data.validationError) {
+          toast.error(data.validationError, { duration: 10000 });
+        }
       }
     } catch (error) {
       console.error('Failed to load status:', error);
@@ -324,11 +563,12 @@ export default function TrafficCams() {
         toast.success(`Synced: ${data.inserted} new, ${data.updated} updated, ${data.camerasActive} active`);
         await loadData();
       } else {
-        throw new Error('Sync failed');
+        const error = await res.json();
+        throw new Error(error.detail || 'Sync failed');
       }
     } catch (error) {
       console.error('Sync error:', error);
-      toast.error('Failed to sync cameras');
+      toast.error(`Failed to sync cameras: ${error.message}`);
     } finally {
       setSyncing(false);
     }
@@ -337,7 +577,7 @@ export default function TrafficCams() {
   const handleRunNow = async () => {
     setRunning(true);
     try {
-      const res = await fetch(`${API}/tii/run-once`, { method: 'POST' });
+      const res = await fetch(`${API}/tii/run-once?limit=50`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         toast.success(`Processed ${data.stats.processed} cameras (${data.stats.ok} ok, ${data.stats.errors} errors)`);
@@ -361,6 +601,11 @@ export default function TrafficCams() {
     );
   }
 
+  // Show empty state if no cameras
+  if (cameras.length === 0) {
+    return <EmptyState onSync={handleSyncCameras} syncing={syncing} />;
+  }
+
   return (
     <div className="relative h-screen">
       {/* Map */}
@@ -370,17 +615,19 @@ export default function TrafficCams() {
         style={{ height: '100%', width: '100%' }}
         data-testid="traffic-cams-map"
       >
-        <MapView cameras={cameras} onCameraClick={setSelectedCamera} />
+        <MapView cameras={filteredCameras} onCameraClick={setSelectedCamera} />
       </MapContainer>
 
-      {/* Control Panel */}
-      <div className="absolute top-4 left-4 z-[999] space-y-2">
+      {/* Sidebar with Controls */}
+      <div className="absolute top-4 left-4 z-[999] space-y-2 max-w-sm">
         <Card className="shadow-lg">
           <CardContent className="p-4 space-y-3">
             <h1 className="text-xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
               TII Traffic Cameras
             </h1>
+            
             <div className="text-sm text-slate-600 space-y-1">
+              <div>Total Cameras: <strong>{status?.camerasTotal || 0}</strong></div>
               <div>Active Cameras: <strong>{status?.camerasActive || 0}</strong></div>
               {status?.lastRunAt && (
                 <div className="text-xs">
@@ -393,7 +640,30 @@ export default function TrafficCams() {
                 </div>
               )}
             </div>
+            
             <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Search cameras..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                  data-testid="search-cameras-input"
+                />
+              </div>
+              
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showActiveOnly}
+                  onChange={(e) => setShowActiveOnly(e.target.checked)}
+                  className="rounded"
+                  data-testid="active-only-checkbox"
+                />
+                <span>Show active only</span>
+              </label>
+              
               <Button
                 onClick={handleSyncCameras}
                 disabled={syncing}
@@ -407,6 +677,7 @@ export default function TrafficCams() {
                   <><RefreshCw className="w-4 h-4 mr-2" />Sync Cameras</>
                 )}
               </Button>
+              
               <Button
                 onClick={handleRunNow}
                 disabled={running}
@@ -421,7 +692,15 @@ export default function TrafficCams() {
                   <><Camera className="w-4 h-4 mr-2" />Run Now</>
                 )}
               </Button>
+              
+              <HelpModal />
             </div>
+            
+            {filteredCameras.length !== cameras.length && (
+              <div className="text-xs text-slate-500 pt-2 border-t">
+                Showing {filteredCameras.length} of {cameras.length} cameras
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
