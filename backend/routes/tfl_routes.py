@@ -27,7 +27,7 @@ async def get_status(db: AsyncIOMotorDatabase = Depends(get_db)):
     """Get TfL integration status.
     
     Returns:
-        Status information including enabled, validated, validation errors, and scheduler state
+        Status information including enabled, validated, degraded, validation errors, and scheduler state
     """
     cameras_active = 0
     cameras_total = 0
@@ -40,13 +40,14 @@ async def get_status(db: AsyncIOMotorDatabase = Depends(get_db)):
     status = {
         'enabled': tfl_status.enabled,
         'validated': tfl_status.validated,
+        'degraded': tfl_status.degraded,
         'validationError': tfl_status.validation_error,
         'isSeeded': tfl_status.is_seeded,
         'camerasActive': cameras_active,
         'camerasTotal': cameras_total,
         'lastRunAt': None,
         'nextRunAt': None,
-        'lastCycle': {'processed': 0, 'ok': 0, 'errors': 0}
+        'lastCycle': {'processed': 0, 'ok': 0, 'errors': 0, 'notFound404': 0}
     }
     
     if scheduler:
