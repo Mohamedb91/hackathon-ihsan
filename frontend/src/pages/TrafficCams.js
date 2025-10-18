@@ -228,7 +228,7 @@ function CameraDrawer({ camera, onClose }) {
 
   const loadCameraData = async () => {
     setLoading(true);
-    try:
+    try {
       // Load latest observation
       const obsRes = await fetch(`${API}/tii/cameras/${camera.cameraId}/latest`);
       if (obsRes.ok) {
