@@ -65,7 +65,7 @@ async def startup_event():
         if not config.TII_ENABLE:
             logger.info("TII integration disabled by configuration (TII_ENABLE=false)")
         else:
-            logger.warning(f"TII integration degraded: {arcgis_service.validation_error or 'Validation failed'}. Scheduler will not start.")
+            logger.warning(f"TII integration degraded: {tii_status.validation_error or 'Validation failed'}. Scheduler will not start.")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
