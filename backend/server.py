@@ -35,11 +35,20 @@ app = pothole_app
 # Include TII routes
 app.include_router(tii_routes.router)
 
+# Include TfL routes
+app.include_router(tfl_routes.router)
+
 # Initialize ArcGIS service and TII scheduler
 arcgis_service = ArcGISService()
 scheduler = TIIScheduler(db, gemini_engine)
 tii_routes.scheduler = scheduler  # Set global scheduler for routes
 tii_routes.arcgis_service = arcgis_service  # Set global ArcGIS service for routes
+
+# Initialize TfL service and scheduler
+tfl_service = TfLService()
+tfl_scheduler = TfLScheduler(db, gemini_engine)
+tfl_routes.scheduler = tfl_scheduler  # Set global scheduler for routes
+tfl_routes.tfl_service = tfl_service  # Set global TfL service for routes
 
 app.add_middleware(
     CORSMiddleware,
