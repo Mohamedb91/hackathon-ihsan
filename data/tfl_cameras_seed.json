@@ -1,0 +1,23 @@
+[
+  {
+    "cameraId": "JamCams_00001.00001",
+    "name": "A1 Archway Rd N/B",
+    "lat": 51.568,
+    "lon": -0.140,
+    "imageUrl": "https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.00001.jpg"
+  },
+  {
+    "cameraId": "JamCams_00001.00002",
+    "name": "A1 Archway Rd S/B",
+    "lat": 51.568,
+    "lon": -0.140,
+    "imageUrl": "https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.00002.jpg"
+  },
+  {
+    "cameraId": "JamCams_00001.04381",
+    "name": "A1 Upper St / Liverpool Rd",
+    "lat": 51.541,
+    "lon": -0.104,
+    "imageUrl": "https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.04381.jpg"
+  }
+]
