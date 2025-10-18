@@ -19,9 +19,14 @@ class Config:
     
     # MongoDB settings
     MONGO_URL: str = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-    DB_NAME: str = os.environ.get('DB_NAME', 'test_database')
+    DB_NAME: str = os.environ.get('DB_NAME', 'civicflow')
     
     # CORS settings
     CORS_ORIGINS: str = os.environ.get('CORS_ORIGINS', '*')
+    
+    # TII Camera Integration
+    TII_ARCGIS_LAYER_URL: str = os.environ.get('TII_ARCGIS_LAYER_URL', '')
+    TII_POLL_INTERVAL_MIN: int = int(os.environ.get('TII_POLL_INTERVAL_MIN', 15))
+    MAX_CAMERAS_PER_CYCLE: int = int(os.environ.get('MAX_CAMERAS_PER_CYCLE', 100))
 
 config = Config()
