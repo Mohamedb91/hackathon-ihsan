@@ -11,7 +11,7 @@ class Config:
     
     # Gemini settings
     GEMINI_API_KEY: str = os.environ.get('EMERGENT_LLM_KEY', '')
-    GEMINI_VISION_MODEL: str = os.environ.get('GEMINI_VISION_MODEL', 'gemini-2.5-flash-preview-04-17')
+    GEMINI_VISION_MODEL: str = os.environ.get('GEMINI_VISION_MODEL', 'gemini-2.0-flash')
     
     # Server settings
     HOST: str = os.environ.get('HOST', '0.0.0.0')
