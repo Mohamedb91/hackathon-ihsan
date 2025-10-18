@@ -111,21 +111,26 @@ class TfLScheduler:
                     stats['ok'] += 1
                     
                 except Exception as e:
-                    logger.error(f"Error processing TfL camera {camera.get('cameraId')}: {e}")
-                    stats['errors'] += 1
-                    
-                    # Store error observation
-                    await self.db.tfl_observations.insert_one({
-                        'cameraId': camera.get('cameraId'),
-                        'timestamp': datetime.now(timezone.utc),
-                        'snapshotUrl': camera.get('imageUrl', ''),
-                        'potholes_present': False,
-                        'count': 0,
-                        'boxes': [],
-                        'engine': 'gemini',
-                        'errored': True,
-                        'errorMessage': str(e)[:500]
-                    })
+                    # Check if it's a 404 error
+                    if str(e) == "NOT_FOUND_404":
+                        logger.warning(f"TfL camera {camera.get('cameraId')}: 404 not found")
+                        stats['notFound404'] += 1
+                    else:
+                        logger.error(f"Error processing TfL camera {camera.get('cameraId')}: {e}")
+                        stats['errors'] += 1
+                        
+                        # Store error observation (only for non-404 errors, 404s are already stored in _process_camera)
+                        await self.db.tfl_observations.insert_one({
+                            'cameraId': camera.get('cameraId'),
+                            'timestamp': datetime.now(timezone.utc),
+                            'snapshotUrl': camera.get('imageUrl', ''),
+                            'potholes_present': False,
+                            'count': 0,
+                            'boxes': [],
+                            'engine': 'gemini',
+                            'errored': True,
+                            'errorMessage': str(e)[:500]
+                        })
             
             # Update offset for next cycle
             if not camera_id:
