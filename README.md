@@ -249,109 +249,103 @@ curl "${BACKEND_URL}/api/tii/cameras" | python -m json.tool
 - **Detection errors**: Check snapshot URLs are accessible from the server
 - **Scheduler not running**: Check backend logs for startup errors
 
-## TII Camera Integration
+## Traffic Cameras Setup
+
+### Prerequisites
+
+You need a valid ArcGIS FeatureServer layer URL that provides camera data with:
+- Geometry (lat/lon coordinates)
+- Attributes including camera metadata and snapshot URLs
 
 ### Configuration
 
-Set the TII ArcGIS FeatureServer URL in `/app/backend/.env`:
+1. **Set the FeatureServer URL** in `/app/backend/.env`:
 
 ```bash
-TII_ARCGIS_LAYER_URL=https://trafficview.tii.ie/server/rest/services/Hosted/CCTVs/FeatureServer/0
-TII_POLL_INTERVAL_MIN=15
-MAX_CAMERAS_PER_CYCLE=100
+TII_ARCGIS_LAYER_URL=https://example.com/FeatureServer/0
+```
+
+**Important**: The URL must be the **layer root** (ending with `/FeatureServer/0` or similar), NOT the query endpoint.
+
+2. **Optional**: If auto-detection fails to find the snapshot URL field, specify it explicitly:
+
+```bash
+TII_SNAPSHOT_FIELD=SNAPSHOT_URL
+```
+
+### Validation
+
+Test your FeatureServer URL before configuring:
+
+```bash
+curl "YOUR_LAYER_URL/query?where=1%3D1&outFields=*&returnGeometry=true&f=json"
+```
+
+This should return JSON with a `features` array containing camera data.
+
+**Example Response Structure**:
+```json
+{
+  "features": [
+    {
+      "attributes": {
+        "OBJECTID": 1,
+        "Name": "Camera 1",
+        "SNAPSHOT_URL": "https://example.com/snapshot.jpg"
+      },
+      "geometry": {
+        "x": -6.2603,
+        "y": 53.3498
+      }
+    }
+  ]
+}
 ```
 
 ### Usage
 
-1. **Sync Cameras** (one-time setup):
+1. **Restart Backend** after updating `.env`:
    ```bash
-   curl -X POST "${BACKEND_URL}/api/tii/sync-cameras"
-   ```
-   This fetches all camera locations and metadata from the TII ArcGIS FeatureServer.
-
-2. **Access Traffic Cams Page**:
-   Navigate to `http://your-app/traffic-cams` to view the interactive map.
-
-3. **Manual Detection Run**:
-   Use the "Run Now" button on the web interface or call:
-   ```bash
-   curl -X POST "${BACKEND_URL}/api/tii/run-once"
+   sudo supervisorctl restart backend
    ```
 
-### How It Works
+2. **Sync Cameras**:
+   - Navigate to `/traffic-cams` page
+   - Click "Sync Cameras" button
+   - Or use API: `curl -X POST "${BACKEND_URL}/api/tii/sync-cameras"`
 
-1. **Camera Discovery**: The system queries the TII ArcGIS FeatureServer to discover all active traffic cameras.
+3. **Verify**:
+   ```bash
+   # Check status
+   curl "${BACKEND_URL}/api/tii/status"
+   
+   # List cameras
+   curl "${BACKEND_URL}/api/tii/cameras"
+   ```
 
-2. **Snapshot Detection**: The system automatically detects which attribute field contains the camera snapshot URL (looks for fields containing "image", "snapshot", "url", etc.).
+4. **Automatic Polling**:
+   - Once cameras are synced, the scheduler automatically polls every 15 minutes
+   - Or manually trigger: Click "Run Now" or `curl -X POST "${BACKEND_URL}/api/tii/run-once?limit=50"`
 
-3. **Scheduled Polling**: Every 15 minutes (configurable), the scheduler:
-   - Fetches snapshots from active cameras
-   - Runs Gemini pothole detection
-   - Stores results in MongoDB `observations` collection
-   - Updates camera `lastSeenAt` timestamp
+### Snapshot Field Auto-Detection
 
-4. **Visualization**: The frontend displays:
-   - Interactive Leaflet map with camera markers
-   - Click any marker to view camera details
-   - Latest snapshot with bounding boxes overlay
-   - Detection results and historical timeline
+The system automatically detects snapshot URL fields by:
+1. Checking if `TII_SNAPSHOT_FIELD` is set and exists
+2. Searching for attribute keys matching: `image|snapshot|url|photo|picture|jpeg|jpg|camera` (case-insensitive)
+3. Validating the value looks like an image URL: `^https?://.*\.(jpg|jpeg|png)(\?.*)?$`
 
-### Data Model
+If no valid field is found, the camera is marked as `active: false` with `inactiveReason: "No snapshot field detected"`.
 
-**cameras collection**:
-```json
-{
-  "cameraId": "string",
-  "name": "string",
-  "lat": 53.3498,
-  "lon": -6.2603,
-  "snapshotField": "ImageURL",
-  "lastSnapshotUrl": "https://...",
-  "lastSeenAt": "2025-10-18T14:30:00Z",
-  "active": true,
-  "raw": { }
-}
-```
+### Frontend Features
 
-**observations collection**:
-```json
-{
-  "cameraId": "string",
-  "timestamp": "2025-10-18T14:30:00Z",
-  "snapshotUrl": "https://...",
-  "potholes_present": true,
-  "count": 2,
-  "boxes": [
-    {"x": 120, "y": 300, "w": 210, "h": 95, "confidence": 0.87}
-  ],
-  "engine": "gemini",
-  "notes": "Model: gemini-2.0-flash",
-  "errored": false,
-  "errorMessage": null
-}
-```
+- **Empty State**: Shows helpful setup instructions when no cameras are loaded
+- **Search**: Filter cameras by name or ID
+- **Active Only**: Toggle to show only active cameras
+- **Help Modal**: Click "Help" button for detailed setup instructions
+- **Per-Camera Detection**: Click any marker, then "Run Detection Now" to process that specific camera
+- **Attribution**: TII data source attribution displayed in footer (CC-BY 4.0 compliance)
 
-### API Endpoints
-
-- `POST /api/tii/sync-cameras` - Sync cameras from TII ArcGIS
-- `POST /api/tii/run-once` - Manually trigger one detection cycle
-- `GET /api/tii/status` - Get scheduler status
-- `GET /api/tii/cameras` - List all cameras
-- `GET /api/tii/cameras/{cameraId}/latest` - Get latest observation for a camera
-- `GET /api/tii/observations?cameraId={id}&limit={n}` - List observations
-
-### Attribution & License
-
-This application uses data from **Transport Infrastructure Ireland (TII)**:
-- Data source: [TII Traffic View](https://trafficview.tii.ie)
-- License: [Creative Commons Attribution 4.0 (CC-BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
-- Attribution is displayed on the Traffic Cams page footer
-
-**Important Notes:**
-- Respect the 15-minute polling interval (never hammer the TII servers)
-- Traffic camera images are public but may have low resolution for pothole detection
-- Motorway cameras often have wide-angle, high-FOV views where small potholes may not be visible
-- This is a proof-of-concept for infrastructure monitoring; production deployments should coordinate with TII
+### Troubleshooting
 
 ## License
 
