@@ -662,10 +662,10 @@ export default function TrafficCams() {
       <div className="flex-1 relative">
         {/* Map */}
         <MapContainer
-          center={[53.3498, -6.2603]} // Dublin, Ireland
-          zoom={7}
+          center={[51.5074, -0.1278]} // London, UK
+          zoom={11}
           style={{ height: '100%', width: '100%' }}
-          data-testid="traffic-cams-map"
+          data-testid="jamcams-map"
         >
           <MapView cameras={filteredCameras} onCameraClick={setSelectedCamera} />
         </MapContainer>
