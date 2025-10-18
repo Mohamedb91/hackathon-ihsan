@@ -61,61 +61,34 @@ GET {TFL_BASE}/Place/Type/JamCam[?app_id&app_key]
           </div>
           
           <div>
-            <h4 className="font-semibold mb-2">Disable TII in Locked-Down Environments</h4>
+            <h4 className="font-semibold mb-2">Disable TfL in Locked-Down Environments</h4>
             <p className="text-slate-600 mb-2">
-              If you're in a DNS-isolated or restricted environment, disable TII:
+              If TfL API is unavailable, disable or use seed file:
             </p>
             <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
-TII_ENABLE=false
-            </pre>
-            <p className="text-slate-500 text-xs mt-2">
-              Core pothole detection (/detect) will continue to work normally.
-            </p>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-2">Example URL</h4>
-            <p className="text-slate-600 mb-2">
-              Transport Infrastructure Ireland (TII) example:
-            </p>
-            <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
-https://trafficview.tii.ie/server/rest/services/Hosted/CCTVs/FeatureServer/0
+TFL_ENABLE=false
+# OR
+TFL_SEED_FILE=/app/data/tfl_cameras_seed.json
             </pre>
           </div>
           
           <div>
-            <h4 className="font-semibold mb-2">Test Your URL</h4>
-            <p className="text-slate-600 mb-2">
-              Validate your FeatureServer URL (5s connect, 10s read timeout):
-            </p>
+            <h4 className="font-semibold mb-2">Example Endpoint</h4>
             <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
-/query?where=1%3D1&outFields=*&returnGeometry=true&f=json
-            </pre>
-            <p className="text-slate-500 text-xs mt-2">
-              This should return a JSON response with a "features" array containing camera data.
-            </p>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-2">Optional: Snapshot Field Override</h4>
-            <p className="text-slate-600 mb-2">
-              If auto-detection fails, specify the snapshot URL field:
-            </p>
-            <pre className="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
-TII_SNAPSHOT_FIELD=SNAPSHOT_URL
+https://api.tfl.gov.uk/Place/Type/JamCam
             </pre>
           </div>
           
           <div>
-            <h4 className="font-semibold mb-2">15-Minute Snapshot Cadence</h4>
+            <h4 className="font-semibold mb-2">~3 Minute Refresh Cadence</h4>
             <p className="text-slate-600 text-sm">
-              The system polls cameras every 15 minutes (configurable). This respects bandwidth and avoids hammering external services.
+              JamCam images refresh approximately every 3 minutes. The system polls at this interval.
             </p>
           </div>
           
           <div className="pt-2 border-t">
             <p className="text-xs text-slate-500">
-              Data Attribution: <strong>Transport Infrastructure Ireland (CC-BY 4.0)</strong>
+              Data Attribution: <strong>Transport for London (TfL) – JamCams (Unified API)</strong>
             </p>
           </div>
         </div>
