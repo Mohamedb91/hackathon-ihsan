@@ -5,13 +5,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
-from datetime import datetime, timezone
 
 # Import the pothole detector app
-from app import app as pothole_app
+from app import app as pothole_app, gemini_engine
+
+# Import TII routes and scheduler
+from routes import tii_routes
+from services.tii_scheduler import TIIScheduler
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -23,6 +23,13 @@ db = client[os.environ['DB_NAME']]
 
 # Use the pothole detector app as the main app
 app = pothole_app
+
+# Include TII routes
+app.include_router(tii_routes.router)
+
+# Initialize TII scheduler
+scheduler = TIIScheduler(db, gemini_engine)
+tii_routes.scheduler = scheduler  # Set global scheduler for routes
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,6 +46,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@app.on_event("startup")
+async def startup_event():
+    """Start TII scheduler on application startup."""
+    logger.info("Starting TII camera scheduler...")
+    await scheduler.start()
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    """Stop scheduler and close database connection."""
+    logger.info("Shutting down...")
+    await scheduler.stop()
     client.close()
