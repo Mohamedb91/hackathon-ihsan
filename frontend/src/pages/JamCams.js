@@ -675,7 +675,7 @@ export default function TrafficCams() {
         <Card className="shadow-lg">
           <CardContent className="p-4 space-y-3">
             <h1 className="text-xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-              TII Traffic Cameras
+              TfL JamCams (London)
             </h1>
             
             <div className="text-sm text-slate-600 space-y-1">
