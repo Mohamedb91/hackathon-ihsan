@@ -13,6 +13,12 @@ from app import app as pothole_app, gemini_engine
 from routes import tii_routes
 from services.tii_scheduler import TIIScheduler
 from services.arcgis_service import ArcGISService, tii_status
+
+# Import TfL routes and scheduler
+from routes import tfl_routes
+from services.tfl_scheduler import TfLScheduler
+from services.tfl_service import TfLService, tfl_status as tfl_validation_status
+
 from core.config import config
 
 ROOT_DIR = Path(__file__).parent
