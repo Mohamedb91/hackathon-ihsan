@@ -267,14 +267,14 @@ function CameraDrawer({ camera, onClose }) {
     setLoading(true);
     try {
       // Load latest observation
-      const obsRes = await fetch(`${API}/tii/cameras/${camera.cameraId}/latest`);
+      const obsRes = await fetch(`${TFL_API}/cameras/${camera.cameraId}/latest`);
       if (obsRes.ok) {
         const obsData = await obsRes.json();
         setObservation(obsData);
       }
 
       // Load timeline
-      const timelineRes = await fetch(`${API}/tii/observations?cameraId=${camera.cameraId}&limit=5`);
+      const timelineRes = await fetch(`${TFL_API}/observations?cameraId=${camera.cameraId}&limit=5`);
       if (timelineRes.ok) {
         const timelineData = await timelineRes.json();
         setTimeline(timelineData);
