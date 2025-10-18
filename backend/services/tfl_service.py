@@ -1,7 +1,7 @@
 import requests
 import logging
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
 from core.config import config
 
@@ -12,13 +12,15 @@ class TfLValidationStatus:
     def __init__(self):
         self.enabled = config.TFL_ENABLE
         self.validated = False
+        self.degraded = False
         self.validation_error: Optional[str] = None
         self.is_seeded = False
     
-    def set_validated(self, success: bool, error: Optional[str] = None, seeded: bool = False):
+    def set_validated(self, success: bool, error: Optional[str] = None, seeded: bool = False, degraded: bool = False):
         self.validated = success
         self.validation_error = error
         self.is_seeded = seeded
+        self.degraded = degraded
 
 # Global singleton instance
 tfl_status = TfLValidationStatus()
@@ -31,6 +33,33 @@ class TfLService:
         self.app_id = config.TFL_APP_ID
         self.app_key = config.TFL_APP_KEY
         self.seed_file = config.TFL_SEED_FILE
+        self.timeout_connect = config.TFL_HTTP_TIMEOUT_CONNECT_S
+        self.timeout_read = config.TFL_HTTP_TIMEOUT_READ_S
+        
+    def head_ok(self, url: str) -> Tuple[bool, Optional[int]]:
+        """Check if URL is accessible via HEAD request.
+        
+        Args:
+            url: URL to check
+            
+        Returns:
+            Tuple of (is_ok, status_code)
+        """
+        try:
+            response = requests.head(url, timeout=(self.timeout_connect, self.timeout_read), allow_redirects=True)
+            
+            # Accept 200, 204, or successful redirects
+            if response.status_code in (200, 204) or (300 <= response.status_code < 400):
+                return (True, response.status_code)
+            
+            return (False, response.status_code)
+            
+        except requests.exceptions.Timeout:
+            logger.debug(f"HEAD timeout for {url}")
+            return (False, None)
+        except Exception as e:
+            logger.debug(f"HEAD failed for {url}: {e}")
+            return (False, None)
         
     def validate_api(self) -> bool:
         """Validate the TfL API by fetching JamCams.
@@ -39,7 +68,13 @@ class TfLService:
             True if valid, False otherwise. Updates global tfl_status.
         """
         if not config.TFL_ENABLE:
-            tfl_status.set_validated(False, "TfL disabled by configuration (TFL_ENABLE=false)")
+            # Try loading seed even when disabled for demo mode
+            if self._load_seed_file():
+                tfl_status.set_validated(True, "TfL disabled by configuration (TFL_ENABLE=false)", seeded=True, degraded=True)
+                logger.info("TfL integration disabled by config, but seed file loaded for demo")
+                return True
+            
+            tfl_status.set_validated(False, "TfL disabled by configuration (TFL_ENABLE=false)", seeded=False, degraded=False)
             logger.info("TfL integration disabled by config")
             return False
             
@@ -47,12 +82,15 @@ class TfLService:
             places = self.fetch_jamcams()
             
             if not places:
+                logger.warning("TfL API returned 0 JamCams")
                 # Try loading seed file
                 if self._load_seed_file():
+                    tfl_status.set_validated(True, "TfL API empty. Using seed file.", seeded=True, degraded=True)
+                    logger.info("TfL API empty, using seed file (degraded mode)")
                     return True
                 
-                error_msg = "No JamCams returned from TfL API. Check TFL_BASE or load a seed file."
-                tfl_status.set_validated(False, error_msg)
+                error_msg = "TfL API empty/unavailable. No cameras to show."
+                tfl_status.set_validated(False, error_msg, seeded=False, degraded=True)
                 logger.error(f"ERROR: TfL validation failed: {error_msg}")
                 return False
             
@@ -60,28 +98,55 @@ class TfLService:
             active_count = sum(1 for p in places if self._get_image_url(p))
             
             if active_count == 0:
+                # Try seed
+                if self._load_seed_file():
+                    error_msg = f"Fetched {len(places)} JamCams but none have imageUrl. Using seed file."
+                    tfl_status.set_validated(True, error_msg, seeded=True, degraded=True)
+                    logger.warning(f"{error_msg}")
+                    return True
+                
                 error_msg = f"Fetched {len(places)} JamCams but none have imageUrl"
-                tfl_status.set_validated(False, error_msg)
+                tfl_status.set_validated(False, error_msg, seeded=False, degraded=True)
                 logger.error(f"ERROR: TfL validation failed: {error_msg}")
                 return False
             
             logger.info(f"✓ TfL API validated successfully ({active_count} cameras with images)")
-            tfl_status.set_validated(True, None, False)
+            tfl_status.set_validated(True, None, seeded=False, degraded=False)
             return True
             
         except requests.exceptions.Timeout as e:
-            error_msg = f"Timeout connecting to TfL API (5s connect, 10s read): {self.base_url}"
-            tfl_status.set_validated(False, error_msg)
+            error_msg = f"Timeout connecting to TfL API ({self.timeout_connect}s connect, {self.timeout_read}s read): {self.base_url}"
+            
+            if self._load_seed_file():
+                tfl_status.set_validated(True, error_msg, seeded=True, degraded=True)
+                logger.warning(f"{error_msg}. Using seed file.")
+                return True
+            
+            tfl_status.set_validated(False, error_msg, seeded=False, degraded=True)
             logger.error(f"ERROR: TfL validation failed: {error_msg}")
             return False
+            
         except requests.exceptions.ConnectionError as e:
             error_msg = f"DNS resolution or network error connecting to TfL API: {str(e)[:200]}"
-            tfl_status.set_validated(False, error_msg)
+            
+            if self._load_seed_file():
+                tfl_status.set_validated(True, error_msg, seeded=True, degraded=True)
+                logger.warning(f"{error_msg}. Using seed file.")
+                return True
+            
+            tfl_status.set_validated(False, error_msg, seeded=False, degraded=True)
             logger.error(f"ERROR: TfL validation failed: {error_msg}")
             return False
+            
         except Exception as e:
             error_msg = f"Unexpected error validating TfL API: {str(e)[:200]}"
-            tfl_status.set_validated(False, error_msg)
+            
+            if self._load_seed_file():
+                tfl_status.set_validated(True, error_msg, seeded=True, degraded=True)
+                logger.warning(f"{error_msg}. Using seed file.")
+                return True
+            
+            tfl_status.set_validated(False, error_msg, seeded=False, degraded=True)
             logger.error(f"ERROR: TfL validation failed: {error_msg}", exc_info=True)
             return False
     
@@ -93,7 +158,7 @@ class TfLService:
         """
         seed_path = Path(self.seed_file)
         if not seed_path.exists():
-            logger.warning(f"Seed file not found: {self.seed_file}")
+            logger.debug(f"Seed file not found: {self.seed_file}")
             return False
         
         try:
@@ -105,7 +170,6 @@ class TfLService:
                 return False
             
             logger.info(f"Loaded {len(seed_data)} cameras from seed file")
-            tfl_status.set_validated(True, None, seeded=True)
             return True
             
         except Exception as e:
@@ -131,7 +195,7 @@ class TfLService:
                 params['app_key'] = self.app_key
             
             logger.info(f"Fetching JamCams from {url}")
-            response = requests.get(url, params=params, timeout=(5, 10))
+            response = requests.get(url, params=params, timeout=(self.timeout_connect, self.timeout_read))
             response.raise_for_status()
             
             places = response.json()
@@ -218,7 +282,7 @@ class TfLService:
             Exception: If download fails
         """
         try:
-            response = requests.get(url, timeout=(5, 10), stream=True)
+            response = requests.get(url, timeout=(self.timeout_connect, self.timeout_read), stream=True)
             response.raise_for_status()
             
             # Read with size limit (2MB)

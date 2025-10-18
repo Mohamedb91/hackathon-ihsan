@@ -32,12 +32,14 @@ class Config:
     MAX_CAMERAS_PER_CYCLE: int = int(os.environ.get('MAX_CAMERAS_PER_CYCLE', 100))
     
     # TfL JamCams Integration
-    TFL_ENABLE: bool = os.environ.get('TFL_ENABLE', 'true').lower() in ('true', '1', 'yes')
+    TFL_ENABLE: bool = os.environ.get('TFL_ENABLE', 'false').lower() in ('true', '1', 'yes')
     TFL_BASE: str = os.environ.get('TFL_BASE', 'https://api.tfl.gov.uk')
     TFL_APP_ID: str = os.environ.get('TFL_APP_ID', '')
     TFL_APP_KEY: str = os.environ.get('TFL_APP_KEY', '')
     TFL_POLL_INTERVAL_MIN: int = int(os.environ.get('TFL_POLL_INTERVAL_MIN', 3))
     TFL_MAX_CAMERAS_PER_CYCLE: int = int(os.environ.get('TFL_MAX_CAMERAS_PER_CYCLE', 150))
-    TFL_SEED_FILE: str = os.environ.get('TFL_SEED_FILE', './data/tfl_cameras_seed.json')
+    TFL_HTTP_TIMEOUT_CONNECT_S: int = int(os.environ.get('TFL_HTTP_TIMEOUT_CONNECT_S', 5))
+    TFL_HTTP_TIMEOUT_READ_S: int = int(os.environ.get('TFL_HTTP_TIMEOUT_READ_S', 10))
+    TFL_SEED_FILE: str = os.environ.get('TFL_SEED_FILE', '/app/data/tfl_cameras_seed.json')
 
 config = Config()
