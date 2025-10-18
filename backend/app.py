@@ -4,10 +4,10 @@ import logging
 import time
 from pathlib import Path
 
-from .schemas import DetectionResult
-from .utils import pil_from_upload
-from .engines import GeminiEngine
-from .core.config import config
+from schemas import DetectionResult
+from utils import pil_from_upload
+from engines import GeminiEngine
+from core.config import config
 
 # Configure logging
 logging.basicConfig(
