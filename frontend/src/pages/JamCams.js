@@ -290,7 +290,7 @@ function CameraDrawer({ camera, onClose }) {
   const runDetectionNow = async () => {
     setDetecting(true);
     try {
-      const res = await fetch(`${API}/tii/run-once?limit=1&camera_id=${camera.cameraId}`, { method: 'POST' });
+      const res = await fetch(`${TFL_API}/run-once?limit=1&cameraId=${camera.cameraId}`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         toast.success(`Detection complete: ${data.stats.ok} ok, ${data.stats.errors} errors`);
