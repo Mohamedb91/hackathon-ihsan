@@ -58,7 +58,7 @@ pip install fastapi uvicorn pillow numpy python-dotenv python-multipart
 
 2. **Environment variables** (already configured in `.env`):
 ```bash
-EMERGENT_LLM_KEY=sk-emergent-4B6C5048eB9Ec00B6E
+EMERGENT_LLM_KEY=
 GEMINI_VISION_MODEL=gemini-2.0-flash
 HOST=0.0.0.0
 PORT=8001
