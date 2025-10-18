@@ -36,7 +36,7 @@ const Home = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           <Link to="/detector" className="group">
             <div className="bg-white rounded-xl shadow-lg p-8 transition-all hover:shadow-xl hover:-translate-y-1">
               <div className="text-4xl mb-4">📸</div>
@@ -53,10 +53,22 @@ const Home = () => {
             <div className="bg-white rounded-xl shadow-lg p-8 transition-all hover:shadow-xl hover:-translate-y-1">
               <div className="text-4xl mb-4">🚦</div>
               <h2 className="text-2xl font-bold text-slate-900 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                Traffic Cameras
+                TII Traffic Cameras
               </h2>
               <p className="text-slate-600">
-                Monitor TII traffic cameras and track pothole detections in real-time
+                Monitor TII traffic cameras (Ireland) and track pothole detections
+              </p>
+            </div>
+          </Link>
+
+          <Link to="/jamcams" className="group">
+            <div className="bg-white rounded-xl shadow-lg p-8 transition-all hover:shadow-xl hover:-translate-y-1">
+              <div className="text-4xl mb-4">🇬🇧</div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                TfL JamCams (London)
+              </h2>
+              <p className="text-slate-600">
+                Monitor TfL JamCams in London with real-time pothole detection
               </p>
             </div>
           </Link>
