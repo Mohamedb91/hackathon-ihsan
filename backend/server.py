@@ -55,16 +55,16 @@ async def startup_event():
     logger.info("Starting TII camera integration...")
     
     # Validate ArcGIS layer URL
-    if arcgis_service.layer_url:
-        logger.info("Validating TII ArcGIS layer URL...")
-        is_valid = arcgis_service.validate_layer_url()
-        if not is_valid:
-            logger.error(f"TII integration disabled due to validation error: {arcgis_service.validation_error}")
-        else:
-            logger.info("Starting TII camera scheduler...")
-            await scheduler.start()
+    is_valid = arcgis_service.validate_layer_url()
+    
+    if is_valid:
+        logger.info("TII validation successful. Starting scheduler...")
+        await scheduler.start()
     else:
-        logger.warning("TII_ARCGIS_LAYER_URL not configured. TII integration disabled.")
+        if not config.TII_ENABLE:
+            logger.info("TII integration disabled by configuration (TII_ENABLE=false)")
+        else:
+            logger.warning(f"TII integration degraded: {arcgis_service.validation_error or 'Validation failed'}. Scheduler will not start.")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
