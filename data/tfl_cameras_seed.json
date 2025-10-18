@@ -1,23 +1,23 @@
 [
   {
     "cameraId": "JamCams_Demo_001",
-    "name": "London Demo Camera 1",
+    "name": "London Bridge Road",
     "lat": 51.5074,
     "lon": -0.1278,
-    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Traffic_on_Brixton_Road_-_geograph.org.uk_-_1751363.jpg/800px-Traffic_on_Brixton_Road_-_geograph.org.uk_-_1751363.jpg"
+    "imageUrl": "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=800&q=80"
   },
   {
     "cameraId": "JamCams_Demo_002",
-    "name": "London Demo Camera 2",
+    "name": "Oxford Street",
     "lat": 51.5155,
     "lon": -0.0922,
-    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/London_traffic.jpg/800px-London_traffic.jpg"
+    "imageUrl": "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&q=80"
   },
   {
     "cameraId": "JamCams_Demo_003",
-    "name": "London Demo Camera 3",
+    "name": "Camden High Street",
     "lat": 51.5310,
     "lon": -0.1239,
-    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Road_in_London.jpg/800px-Road_in_London.jpg"
+    "imageUrl": "https://images.unsplash.com/photo-1464219789935-c2d9d9aba644?w=800&q=80"
   }
 ]
