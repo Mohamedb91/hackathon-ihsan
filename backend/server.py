@@ -67,20 +67,34 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
-    """Start TII scheduler on application startup."""
-    logger.info("Starting TII camera integration...")
+    """Start TII and TfL schedulers on application startup."""
+    logger.info("Starting camera integrations...")
     
-    # Validate ArcGIS layer URL
-    is_valid = arcgis_service.validate_layer_url()
+    # TII validation
+    logger.info("Validating TII ArcGIS layer...")
+    tii_valid = arcgis_service.validate_layer_url()
     
-    if is_valid:
-        logger.info("TII validation successful. Starting scheduler...")
+    if tii_valid:
+        logger.info("TII validation successful. Starting TII scheduler...")
         await scheduler.start()
     else:
         if not config.TII_ENABLE:
             logger.info("TII integration disabled by configuration (TII_ENABLE=false)")
         else:
             logger.warning(f"TII integration degraded: {tii_status.validation_error or 'Validation failed'}. Scheduler will not start.")
+    
+    # TfL validation
+    logger.info("Validating TfL API...")
+    tfl_valid = tfl_service.validate_api()
+    
+    if tfl_valid:
+        logger.info("TfL validation successful. Starting TfL scheduler...")
+        await tfl_scheduler.start()
+    else:
+        if not config.TFL_ENABLE:
+            logger.info("TfL integration disabled by configuration (TFL_ENABLE=false)")
+        else:
+            logger.warning(f"TfL integration degraded: {tfl_validation_status.validation_error or 'Validation failed'}. Scheduler will not start.")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
